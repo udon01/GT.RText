@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using GT.RText.Core;
 using GT.Shared.Logging;
@@ -21,21 +14,11 @@ namespace GT.RText
         {
             InitializeComponent();
 
-            ColumnHeader columnHeader2 = new ColumnHeader();
-
             listViewCategories.Columns.Add("Category", -2, HorizontalAlignment.Left);
-
-            listViewEntries.Columns.Add("RecNo", -2, HorizontalAlignment.Left);
-            listViewEntries.Columns.Add("Id", -2, HorizontalAlignment.Left);
-            listViewEntries.Columns.Add("Label", -2, HorizontalAlignment.Left);
-            listViewEntries.Columns.Add("String", -2, HorizontalAlignment.Left);
 
             _columnSorter = new ListViewColumnSorter();
             this.listViewEntries.ListViewItemSorter = _columnSorter;
             this.listViewEntries.Sorting = SortOrder.Ascending;
-
-            //listViewCategories.Columns[0].ListView.Font = new Font(listViewCategories.Columns[0].ListView.Font, FontStyle.Bold);
-            //listViewEntries.Columns[0].ListView.Font = new Font(listViewEntries.Columns[0].ListView.Font, FontStyle.Bold);
         }
 
         #region Events
@@ -45,7 +28,7 @@ namespace GT.RText
 
             ClearListViews();
 
-            ReadRT04File(openFileDialog.FileName);
+            ReadRTextFile(openFileDialog.FileName);
         }
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
@@ -113,6 +96,11 @@ namespace GT.RText
 
         }
 
+        private void listViewEntries_DoubleClick(object sender, EventArgs e)
+        {
+            editToolStripMenuItem_Click(null, null);
+        }
+
         private void editToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (listViewCategories.SelectedItems.Count <= 0 || listViewCategories.SelectedItems[0] == null) return;
@@ -130,7 +118,7 @@ namespace GT.RText
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
                     category.EditRow(rowData.Index, rowEditor.Id, rowEditor.Label, rowEditor.Data);
-                    toolStripStatusLabel.Text = $"{rowEditor.Id} - edited";
+                    toolStripStatusLabel.Text = $"{rowData.Index} - edited";
 
                     DisplayEntries(category);
                 }
@@ -151,11 +139,11 @@ namespace GT.RText
                 var categoryLViewItem = listViewCategories.SelectedItems[0];
                 var category = (IRTextCategory)categoryLViewItem.Tag;
 
-                var rowEditor = new RowEditor();
+                var rowEditor = new RowEditor(_rText.RText is RT03);
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
                     var rowId = category.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
-                    toolStripStatusLabel.Text = $"{rowEditor.Id} - added";
+                    toolStripStatusLabel.Text = $"{rowEditor.Label} - added";
 
                     DisplayEntries(category);
                 }
@@ -196,6 +184,28 @@ namespace GT.RText
                 toolStripStatusLabel.Text = ex.Message;
             }
         }
+
+        private void listViewEntries_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            // Determine if clicked column is already the column that is being sorted.
+            if (e.Column == _columnSorter.SortColumn)
+            {
+                // Reverse the current sort direction for this column.
+                _columnSorter.Order = _columnSorter.Order == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                // Set the column number that is to be sorted; default to ascending.
+                _columnSorter.SortColumn = e.Column;
+                _columnSorter.Order = SortOrder.Ascending;
+            }
+
+            // Adjust the sort icon
+            this.listViewEntries.SetSortIcon(e.Column, _columnSorter.Order);
+
+            // Perform the sort with these new sort options.
+            this.listViewEntries.Sort();
+        }
         #endregion
 
         private void ClearListViews()
@@ -218,7 +228,7 @@ namespace GT.RText
             listViewEntries.EndUpdate();
         }
 
-        private void ReadRT04File(string filePath)
+        private void ReadRTextFile(string filePath)
         {
             try
             {
@@ -259,12 +269,37 @@ namespace GT.RText
         {
             listViewEntries.BeginUpdate();
             SortEntriesListView(0);
-            listViewEntries.Items.Clear();
+            listViewEntries.Clear();
+
+            // Set the view to show details.
+            listViewEntries.View = View.Details;
+            // Allow the user to edit item text.
+            listViewEntries.LabelEdit = true;
+            // Show item tooltips.
+            listViewEntries.ShowItemToolTips = true;
+            // Allow the user to rearrange columns.
+            //lView.AllowColumnReorder = true;
+            // Select the item and subitems when selection is made.
+            listViewEntries.FullRowSelect = true;
+            // Display grid lines.
+            listViewEntries.GridLines = true;
+
+            // Add column headers
+            listViewEntries.Columns.Add("RecNo", -2, HorizontalAlignment.Left);
+            if ((_rText.RText is RT03) == false)
+                listViewEntries.Columns.Add("Id", -2, HorizontalAlignment.Left);
+            listViewEntries.Columns.Add("Label", -2, HorizontalAlignment.Left);
+            listViewEntries.Columns.Add("String", -2, HorizontalAlignment.Left);
+
+            // Add entries
             var entries = category.Entries;
             var items = new ListViewItem[entries.Count];
             for (var i = 0; i < entries.Count; i++)
             {
-                items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Id.ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
+                if ((_rText.RText is RT03) == false)
+                    items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Id.ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
+                else
+                    items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
             }
 
             listViewEntries.Items.AddRange(items);
@@ -272,28 +307,6 @@ namespace GT.RText
             listViewEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             listViewEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             listViewEntries.EndUpdate();
-        }
-
-        private void listViewEntries_ColumnClick(object sender, ColumnClickEventArgs e)
-        {
-            // Determine if clicked column is already the column that is being sorted.
-            if (e.Column == _columnSorter.SortColumn)
-            {
-                // Reverse the current sort direction for this column.
-                _columnSorter.Order = _columnSorter.Order == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
-            }
-            else
-            {
-                // Set the column number that is to be sorted; default to ascending.
-                _columnSorter.SortColumn = e.Column;
-                _columnSorter.Order = SortOrder.Ascending;
-            }
-
-            // Adjust the sort icon
-            this.listViewEntries.SetSortIcon(e.Column, _columnSorter.Order);
-
-            // Perform the sort with these new sort options.
-            this.listViewEntries.Sort();
         }
 
         private void SortEntriesListView(int columnIndex)

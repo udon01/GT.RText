@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using GT.Shared.Logging;
 
 namespace GT.RText
 {
@@ -12,8 +11,6 @@ namespace GT.RText
         [STAThread]
         static void Main()
         {
-            new NDB0.Core.NDB0("CarName.dat", new FileWriter());
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Main());

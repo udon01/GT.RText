@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace GT.RText
@@ -21,6 +14,13 @@ namespace GT.RText
             InitializeComponent();
         }
 
+        public RowEditor(bool isWithoutId)
+        {
+            InitializeComponent();
+
+            if (isWithoutId) HandleId(-1);
+        }
+
         public RowEditor(int id, string label, string data)
         {
             InitializeComponent();
@@ -29,9 +29,26 @@ namespace GT.RText
             Label = label;
             Data = data;
 
-            numericUpDown_id.Value = id;
             textBox_label.Text = label;
             richTextBox_data.Text = data;
+
+            HandleId(id);
+        }
+
+        private void HandleId(int id)
+        {
+            if (id == -1)
+            {
+                // RT03 doesn't have ID
+                label_id.Visible = false;
+                numericUpDown_id.Visible = false;
+            }
+            else
+            {
+                label_id.Visible = true;
+                numericUpDown_id.Visible = true;
+                numericUpDown_id.Value = id;
+            }
         }
 
         private void numericUpDown_id_ValueChanged(object sender, EventArgs e)

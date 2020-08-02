@@ -41,6 +41,9 @@ namespace GT.RText.Core
             {
                 switch (reader.ReadUInt32())
                 {
+                    case Constants.RT03_MAGIC:
+                        RText = new RT03(_data, _logWriter);
+                        break;
                     case Constants.RT04_MAGIC:
                         RText = new RT04(_data, _logWriter);
                         break;

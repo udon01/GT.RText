@@ -113,6 +113,7 @@
             this.listViewEntries.View = System.Windows.Forms.View.Details;
             this.listViewEntries.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listViewEntries_ColumnClick);
             this.listViewEntries.SelectedIndexChanged += new System.EventHandler(this.listViewEntries_SelectedIndexChanged);
+            this.listViewEntries.DoubleClick += new System.EventHandler(this.listViewEntries_DoubleClick);
             // 
             // contextMenuStrip
             // 
@@ -180,7 +181,7 @@
             this.Controls.Add(this.menuStrip);
             this.MainMenuStrip = this.menuStrip;
             this.Name = "Main";
-            this.Text = "RT2/RT04 Editor by xfileFIN";
+            this.Text = "RT2 Editor by xfileFIN";
             this.SizeChanged += new System.EventHandler(this.Main_SizeChanged);
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();

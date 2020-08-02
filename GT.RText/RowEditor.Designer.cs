@@ -127,7 +127,7 @@
             this.Controls.Add(this.label_id);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "RowEditor";
-            this.Text = "RowEditor";
+            this.Text = "Editor";
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_id)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

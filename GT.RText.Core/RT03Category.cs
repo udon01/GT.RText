@@ -6,17 +6,17 @@ using GT.Shared.Polyphony;
 
 namespace GT.RText.Core
 {
-    public class RT04Category : IRTextCategory
+    public class RT03Category : IRTextCategory
     {
         private readonly ILogWriter _logWriter;
         private readonly byte[] _data;
         private readonly int _categoryIndex;
-        private RT04CategoryMeta _categoryMeta;
+        private RT03CategoryMeta _categoryMeta;
 
         public string Name { get; set; }
         public List<(int Index, int Id, string Label, string Data)> Entries { get; set; }
 
-        public RT04Category(byte[] data, int categoryIndex, ILogWriter logWriter = null)
+        public RT03Category(byte[] data, int categoryIndex, ILogWriter logWriter = null)
         {
             _data = data;
             _categoryIndex = categoryIndex;
@@ -65,7 +65,7 @@ namespace GT.RText.Core
             using (var reader = new EndianBinReader(ms, EndianType.LITTLE_ENDIAN))
             {
                 reader.BaseStream.Position = (_categoryIndex + 1) * 0x10;
-                _categoryMeta = new RT04CategoryMeta(reader);
+                _categoryMeta = new RT03CategoryMeta(reader);
             }
         }
 
@@ -94,8 +94,7 @@ namespace GT.RText.Core
 
         private (int index, int Id, string Label, string Data) ReadEntry(EndianBinReader reader, int index)
         {
-            reader.BaseStream.Position = _categoryMeta.EntryOffset + (index * 0x0C);
-            var id = reader.ReadInt32();
+            reader.BaseStream.Position = _categoryMeta.EntryOffset + (index * 0x08);
             var labelOffset = reader.ReadUInt32();
             var dataOffset = reader.ReadUInt32();
 
@@ -105,7 +104,7 @@ namespace GT.RText.Core
             reader.BaseStream.Position = dataOffset;
             var data = reader.ReadNullTerminatedString();
 
-            return (index, id, label, data);
+            return (index, -1, label, data);
         }
 
         #region Saving
@@ -117,10 +116,9 @@ namespace GT.RText.Core
                 // Write categories
                 foreach (var entry in Entries)
                 {
-                    writer.Write(entry.Id);
-                    writer.Write((uint)(baseOffset + (Entries.Count * 0x0C) + dataWriter.BaseStream.Length));
+                    writer.Write((uint)(baseOffset + (Entries.Count * 0x08) + dataWriter.BaseStream.Length));
                     dataWriter.WriteNullTerminatedString(entry.Label, 4);
-                    writer.Write((uint)(baseOffset + (Entries.Count * 0x0C) + dataWriter.BaseStream.Length));
+                    writer.Write((uint)(baseOffset + (Entries.Count * 0x08) + dataWriter.BaseStream.Length));
                     dataWriter.WriteNullTerminatedString(entry.Data, 4);
                 }
 

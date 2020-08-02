@@ -2,6 +2,8 @@
 {
     public static class Constants
     {
+        public const uint RT03_MAGIC = 0x52543033;
+        public const uint RT03_HEADER_SIZE = 0x10;
         public const uint RT04_MAGIC = 0x52543034;
         public const uint RT04_HEADER_SIZE = 0x10;
         public const uint RT05_MAGIC = 0x52543035;
