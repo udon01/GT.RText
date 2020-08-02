@@ -1,7 +1,7 @@
 # GT.RText
 
-Supports editing RT03 and RT04 files. 
+Supports editing RT03, RT04, RT05 and 50TR files. 
 
-Can also read RT05 and 50TR files with the exception of obfuscated strings. Beginning of the obfuscated strings have been deobfuscated but not necessarily the whole string.
+RT05 and 50TR file support is only partial. Key algorithm is still unsolved so the current method works with brute forced keys up to X number of bytes. If the file has string longer than this, it can't be decrypted. And if you want to add a string longer than this, it won't work either. Marking the file as unobfuscated (not yet supported) could solve the last issue but won't work on the first issue.
 
 ![Preview](https://repository-images.githubusercontent.com/284490993/b578fa00-d4f2-11ea-93f0-e4cbfbbdfadd)
