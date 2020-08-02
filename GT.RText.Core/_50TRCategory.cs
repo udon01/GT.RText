@@ -112,43 +112,21 @@ namespace GT.RText.Core
 
             var buffer = reader.ReadBytes(length);
 
-            if (_header.Obfuscated != 1)
+            if (_header.Obfuscated == 1)
             {
-                return Encoding.UTF8.GetString(buffer).TrimEnd('\0');
+                // TODO: xor stuff is yet to be figured out. Brute forced X number of keys so some shorter strings are working.
+                XorEncrypt(buffer);
             }
-
-            // TODO: xor stuff is yet to be figured out. Here's the first 6 variations of the xor key brute forced.
-            var xorKeys = new uint[]
-            {
-                0xccba82f0,
-                0x2f47be13,
-                0xf3da002f,
-                0x4407d2b4,
-                0x58761cbf,
-                0xb607fb43
-            };
-
-            for (int i = 0, index = 0; index < buffer.Length; i++, index += 4)
-            {
-                if (i >= xorKeys.Length)
-                    break;
-
-                var xorKey = xorKeys[i];
-                XorEncript(buffer, index, BitConverter.GetBytes(xorKey).Reverse().ToArray());
-            }
-
-
+            
             return Encoding.UTF8.GetString(buffer).TrimEnd('\0');
         }
 
-        public static void XorEncript(byte[] data, int offset, byte[] key)
+        public static void XorEncrypt(byte[] data)
         {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < data.Length - 1; i++)
             {
-                if (data[i + offset] == 0x00)
-                    break;
-
-                data[i + offset] = (byte)(data[i + offset] ^ key[i]);
+                if (i >= Constants.XOR_KEYS.Length) break;
+                data[i] = (byte)(data[i] ^ Constants.XOR_KEYS[i]);
             }
         }
 
