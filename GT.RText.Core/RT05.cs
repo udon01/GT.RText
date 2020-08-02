@@ -68,7 +68,40 @@ namespace GT.RText.Core
 
         public void Save(string filePath)
         {
-            throw new NotImplementedException();
+            File.WriteAllBytes(filePath, Write());
+        }
+
+        private byte[] Write()
+        {
+            using (var ms = new MemoryStream())
+            using (var ms2 = new MemoryStream())
+            using (var ms3 = new MemoryStream())
+            using (var headerWriter = new EndianBinWriter(ms))
+            using (var categoryMetaWriter = new EndianBinWriter(ms2))
+            using (var entryWriter = new EndianBinWriter(ms3))
+            {
+                // Write the header
+                _header.EntryCount = (uint)_categories.Count;
+                _header.Save(headerWriter);
+
+                // Write categories
+                foreach (var category in _categories)
+                {
+                    // Write category title offset in the meta data
+                    categoryMetaWriter.Write((uint)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length));
+                    categoryMetaWriter.Write(category.Entries.Count);
+                    categoryMetaWriter.Write(0x00000000);
+                    entryWriter.WriteNullTerminatedString(category.Name, 4);
+                    categoryMetaWriter.Write((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length));
+
+                    category.Save((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length), entryWriter);
+                }
+
+                headerWriter.Write(ms2.ToArray());
+                headerWriter.Write(ms3.ToArray());
+
+                return ms.ToArray();
+            }
         }
     }
 }

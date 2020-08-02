@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using GT.RText.Core.Exceptions;
 using GT.RText.Core.Structs;
 using GT.Shared;
 using GT.Shared.Logging;
@@ -38,22 +39,37 @@ namespace GT.RText.Core
 
         public void Save(int baseOffset, EndianBinWriter writer)
         {
-            throw new NotImplementedException();
+            Write(baseOffset, writer);
         }
 
         public void EditRow(int index, int id, string label, string data)
         {
-            throw new NotImplementedException();
+            CheckStringLength(label);
+            CheckStringLength(data);
+
+            if (index < 0 || index > Entries.Count - 1) return;
+
+            Entries[index] = (index, id, label, data);
         }
 
         public int AddRow(int id, string label, string data)
         {
-            throw new NotImplementedException();
+            CheckStringLength(label);
+            CheckStringLength(data);
+
+            var index = Entries.Count;
+            Entries.Add((index, id, label, data));
+            return index;
         }
 
         public void DeleteRow(int index)
         {
-            throw new NotImplementedException();
+            Entries.RemoveAt(index);
+            Entries.ForEach(x =>
+            {
+                if (x.Index > index)
+                    index--;
+            });
         }
 
         private void ReadCategoryMetaData()
@@ -122,39 +138,46 @@ namespace GT.RText.Core
         {
             for (int i = 0; i < data.Length - 1; i++)
             {
-                if (i >= Constants.XOR_KEYS.Length) break;
+                if (i >= Constants.XOR_KEYS.Length) throw new XorKeyTooShortException("String outside of range for known xor keys.");
                 data[i] = (byte)(data[i] ^ Constants.XOR_KEYS[i]);
             }
         }
 
-        public static uint BruteForceNextXorKey(byte[] data, uint currentXorKey, byte[] expectedData)
+        private void CheckStringLength(string stringData)
         {
-            uint xorKey = 0;
-            for (uint i = 0; i < 0xFFFFFFFF; i++)
-            {
-                var key = BitConverter.GetBytes(currentXorKey + i).Reverse().ToArray();
-                byte[] buffer = new byte[data.Length];
-                for (int j = 0; j < data.Length; j++)
-                {
-                    buffer[j] = (byte)(data[j] ^ key[j]);
-                }
-
-                if (buffer[0] == expectedData[0] && buffer[1] == expectedData[1] && buffer[2] == expectedData[2] &&
-                    buffer[3] == expectedData[3])
-                {
-                    xorKey = currentXorKey + i;
-                    goto keyFound;
-                }
-            }
-
-            keyFound:
-            return xorKey;
+            if (Encoding.UTF8.GetBytes($"{stringData}\0").Length > Constants.XOR_KEYS.Length)
+                throw new ArgumentOutOfRangeException($"String {stringData.Take(10)}... is too long to be saved with obfuscation.");
         }
 
         #region Saving
         private void Write(int baseOffset, EndianBinWriter writer)
         {
-            throw new NotImplementedException();
+            using (var ms = new MemoryStream())
+            using (var dataWriter = new EndianBinWriter(ms))
+            {
+                // Write categories
+                foreach (var entry in Entries)
+                {
+                    writer.Write(entry.Id);
+                    var label = Encoding.UTF8.GetBytes($"{entry.Label}\0");
+                    var data = Encoding.UTF8.GetBytes($"{entry.Data}\0");
+                    if (_header.Obfuscated == 1)
+                    {
+                        XorEncrypt(label);
+                        XorEncrypt(data);
+                    }
+
+                    writer.Write((ushort)label.Length);
+                    writer.Write((ushort)data.Length);
+
+                    writer.Write((uint)(baseOffset + (Entries.Count * 0x10) + dataWriter.BaseStream.Length));
+                    dataWriter.WriteAligned(label, 4);
+                    writer.Write((uint)(baseOffset + (Entries.Count * 0x10) + dataWriter.BaseStream.Length));
+                    dataWriter.WriteAligned(data, 4);
+                }
+
+                writer.Write(ms.ToArray());
+            }
         }
         #endregion
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using GT.RText.Core;
+using GT.RText.Core.Exceptions;
 using GT.Shared.Logging;
 
 namespace GT.RText
@@ -234,6 +235,11 @@ namespace GT.RText
             {
                 _rText = new RTextParser(filePath, new ConsoleWriter());
                 DisplayCategories();
+            }
+            catch (XorKeyTooShortException ex)
+            {
+                toolStripStatusLabel.Text = $"Error reading the file: {filePath}";
+                MessageBox.Show("Couldn't decrypt all strings. Please contact xfileFIN for more information.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {

@@ -22,7 +22,15 @@ namespace GT.RText.Core.Structs
 
         public void Save(EndianBinWriter writer)
         {
-            throw new NotImplementedException();
+            writer.Write(Magic);
+            writer.Write(EntryCount);
+            writer.Write(Obfuscated);
+            writer.Write(new byte[] { 0x00, 0x00, 0x00 });
+            writer.Write(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+            writer.Write(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+            writer.Write(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+            writer.Write(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+            writer.Write(new byte[] { 0x00, 0x00, 0x00, 0x00 });
         }
     }
 }

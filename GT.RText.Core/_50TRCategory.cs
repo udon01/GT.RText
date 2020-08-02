@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using GT.RText.Core.Exceptions;
 using GT.RText.Core.Structs;
 using GT.Shared;
 using GT.Shared.Logging;
@@ -38,22 +39,37 @@ namespace GT.RText.Core
 
         public void Save(int baseOffset, EndianBinWriter writer)
         {
-            throw new NotImplementedException();
+            Write(baseOffset, writer);
         }
 
         public void EditRow(int index, int id, string label, string data)
         {
-            throw new NotImplementedException();
+            CheckStringLength(label);
+            CheckStringLength(data);
+
+            if (index < 0 || index > Entries.Count - 1) return;
+
+            Entries[index] = (index, id, label, data);
         }
 
         public int AddRow(int id, string label, string data)
         {
-            throw new NotImplementedException();
+            CheckStringLength(label);
+            CheckStringLength(data);
+
+            var index = Entries.Count;
+            Entries.Add((index, id, label, data));
+            return index;
         }
 
         public void DeleteRow(int index)
         {
-            throw new NotImplementedException();
+            Entries.RemoveAt(index);
+            Entries.ForEach(x =>
+            {
+                if (x.Index > index)
+                    index--;
+            });
         }
 
         private void ReadCategoryMetaData()
@@ -125,15 +141,49 @@ namespace GT.RText.Core
         {
             for (int i = 0; i < data.Length - 1; i++)
             {
-                if (i >= Constants.XOR_KEYS.Length) break;
+                if (i >= Constants.XOR_KEYS.Length) throw new XorKeyTooShortException("String outside of range for known xor keys.");
+
                 data[i] = (byte)(data[i] ^ Constants.XOR_KEYS[i]);
             }
+        }
+
+        private void CheckStringLength(string stringData)
+        {
+            if (Encoding.UTF8.GetBytes($"{stringData}\0").Length > Constants.XOR_KEYS.Length)
+                throw new ArgumentOutOfRangeException($"String {stringData.Take(10)}... is too long to be saved with obfuscation.");
         }
 
         #region Saving
         private void Write(int baseOffset, EndianBinWriter writer)
         {
-            throw new NotImplementedException();
+            using (var ms = new MemoryStream())
+            using (var dataWriter = new EndianBinWriter(ms, EndianType.LITTLE_ENDIAN))
+            {
+                // Write categories
+                foreach (var entry in Entries)
+                {
+                    writer.Write(entry.Id);
+                    var label = Encoding.UTF8.GetBytes($"{entry.Label}\0");
+                    var data = Encoding.UTF8.GetBytes($"{entry.Data}\0");
+                    if (_header.Obfuscated == 1)
+                    {
+                        XorEncrypt(label);
+                        XorEncrypt(data);
+                    }
+
+                    writer.Write((ushort)label.Length);
+                    writer.Write((ushort)data.Length);
+
+                    writer.Write((uint)(baseOffset + (Entries.Count * 0x18) + dataWriter.BaseStream.Length));
+                    writer.Write(0x00000000);
+                    dataWriter.WriteAligned(label, 4);
+                    writer.Write((uint)(baseOffset + (Entries.Count * 0x18) + dataWriter.BaseStream.Length));
+                    writer.Write(0x00000000);
+                    dataWriter.WriteAligned(data, 4);
+                }
+
+                writer.Write(ms.ToArray());
+            }
         }
         #endregion
     }

@@ -77,6 +77,21 @@ public class EndianBinWriter : BinaryWriter
         base.Write(bytes);
     }
 
+    public void WriteAligned(byte[] data, int align = 0)
+    {
+        base.Write(data);
+
+        if (align <= 0 || data.Length % align == 0)
+            return;
+
+        int writtenBytes = 0;
+        while ((data.Length + writtenBytes) % align != 0)
+        {
+            base.Write((byte)0x00);
+            writtenBytes++;
+        }
+    }
+
     public void WriteNullTerminatedString(string data, int align = 0)
     {
         data += '\0';
@@ -86,7 +101,7 @@ public class EndianBinWriter : BinaryWriter
             var byteList = bytes.ToList();
             while (byteList.Count % align != 0)
             {
-                byteList.Add(0x00); ;
+                byteList.Add(0x00);
             }
 
             bytes = byteList.ToArray();

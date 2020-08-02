@@ -68,7 +68,42 @@ namespace GT.RText.Core
 
         public void Save(string filePath)
         {
-            throw new NotImplementedException();
+            File.WriteAllBytes(filePath, Write());
+        }
+
+        private byte[] Write()
+        {
+            using (var ms = new MemoryStream())
+            using (var ms2 = new MemoryStream())
+            using (var ms3 = new MemoryStream())
+            using (var headerWriter = new EndianBinWriter(ms, EndianType.LITTLE_ENDIAN))
+            using (var categoryMetaWriter = new EndianBinWriter(ms2, EndianType.LITTLE_ENDIAN))
+            using (var entryWriter = new EndianBinWriter(ms3, EndianType.LITTLE_ENDIAN))
+            {
+                // Write the header
+                _header.EntryCount = (uint)_categories.Count;
+                _header.Save(headerWriter);
+
+                // Write categories
+                foreach (var category in _categories)
+                {
+                    // Write category title offset in the meta data
+                    categoryMetaWriter.Write((uint)(headerWriter.BaseStream.Length + (_categories.Count * 0x18) + entryWriter.BaseStream.Length));
+                    categoryMetaWriter.Write(0x00000000);
+                    categoryMetaWriter.Write(category.Entries.Count);
+                    categoryMetaWriter.Write(0x00000000);
+                    entryWriter.WriteNullTerminatedString(category.Name, 4);
+                    categoryMetaWriter.Write((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x18) + entryWriter.BaseStream.Length));
+                    categoryMetaWriter.Write(0x00000000);
+
+                    category.Save((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x18) + entryWriter.BaseStream.Length), entryWriter);
+                }
+
+                headerWriter.Write(ms2.ToArray());
+                headerWriter.Write(ms3.ToArray());
+
+                return ms.ToArray();
+            }
         }
     }
 }
