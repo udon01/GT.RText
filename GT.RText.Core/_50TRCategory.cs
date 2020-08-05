@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
-using GT.RText.Core.Exceptions;
 using GT.RText.Core.Structs;
 using GT.Shared;
+using GT.Shared.Crypt;
 using GT.Shared.Logging;
 using GT.Shared.Polyphony;
 
@@ -44,9 +43,6 @@ namespace GT.RText.Core
 
         public void EditRow(int index, int id, string label, string data)
         {
-            CheckStringLength(label);
-            CheckStringLength(data);
-
             if (index < 0 || index > Entries.Count - 1) return;
 
             Entries[index] = (index, id, label, data);
@@ -54,9 +50,6 @@ namespace GT.RText.Core
 
         public int AddRow(int id, string label, string data)
         {
-            CheckStringLength(label);
-            CheckStringLength(data);
-
             var index = Entries.Count;
             Entries.Add((index, id, label, data));
             return index;
@@ -126,31 +119,43 @@ namespace GT.RText.Core
         {
             reader.BaseStream.Position = offset;
 
-            var buffer = reader.ReadBytes(length);
+            var buffer = reader.ReadBytes(length - 1);
 
-            if (_header.Obfuscated == 1)
+            if (_header.Obfuscated == 1 && buffer.Length > 0)
             {
-                // TODO: xor stuff is yet to be figured out. Brute forced X number of keys so some shorter strings are working.
-                XorEncrypt(buffer);
+                buffer = Decrypt(buffer, Constants.KEY.AlignString(0x20));
             }
-            
-            return Encoding.UTF8.GetString(buffer).TrimEnd('\0');
+
+            return Encoding.UTF8.GetString(buffer);
         }
 
-        public static void XorEncrypt(byte[] data)
+        static byte[] Decrypt(byte[] encrypted, string key)
         {
-            for (int i = 0; i < data.Length - 1; i++)
+            using (SymmetricAlgorithm salsa20 = new Salsa20())
             {
-                if (i >= Constants.XOR_KEYS.Length) throw new XorKeyTooShortException("String outside of range for known xor keys.");
+                var dataKey = new byte[8];
+                var keyBytes = Encoding.UTF8.GetBytes(key);
+                byte[] decrypted = new byte[encrypted.Length];
+                using (var decrypt = salsa20.CreateDecryptor(keyBytes, dataKey))
+                    decrypt.TransformBlock(encrypted, 0, encrypted.Length, decrypted, 0);
 
-                data[i] = (byte)(data[i] ^ Constants.XOR_KEYS[i]);
+                return decrypted;
             }
         }
 
-        private void CheckStringLength(string stringData)
+        static byte[] Encrypt(byte[] input, string key)
         {
-            if (Encoding.UTF8.GetBytes($"{stringData}\0").Length > Constants.XOR_KEYS.Length)
-                throw new ArgumentOutOfRangeException($"String {stringData.Take(10)}... is too long to be saved with obfuscation.");
+            using (SymmetricAlgorithm salsa20 = new Salsa20())
+            {
+                var dataKey = new byte[8];
+                var keyBytes = Encoding.UTF8.GetBytes(key);
+
+                byte[] encrypted = new byte[input.Length];
+                using (var encrypt = salsa20.CreateEncryptor(keyBytes, dataKey))
+                    encrypt.TransformBlock(input, 0, input.Length, encrypted, 0);
+
+                return encrypted;
+            }
         }
 
         #region Saving
@@ -163,23 +168,23 @@ namespace GT.RText.Core
                 foreach (var entry in Entries)
                 {
                     writer.Write(entry.Id);
-                    var label = Encoding.UTF8.GetBytes($"{entry.Label}\0");
-                    var data = Encoding.UTF8.GetBytes($"{entry.Data}\0");
-                    if (_header.Obfuscated == 1)
-                    {
-                        XorEncrypt(label);
-                        XorEncrypt(data);
-                    }
+                    var label = Encoding.UTF8.GetBytes($"{entry.Label}");
+                    var data = Encoding.UTF8.GetBytes($"{entry.Data}");
 
-                    writer.Write((ushort)label.Length);
-                    writer.Write((ushort)data.Length);
+                    if (_header.Obfuscated == 1 && label.Length > 0)
+                        label = Encrypt(label, Constants.KEY.AlignString(0x20));
+                    if (_header.Obfuscated == 1 && data.Length > 0)
+                        data = Encrypt(data, Constants.KEY.AlignString(0x20));
+
+                    writer.Write((ushort)(label.Length + 1));
+                    writer.Write((ushort)(data.Length + 1));
 
                     writer.Write((uint)(baseOffset + (Entries.Count * 0x18) + dataWriter.BaseStream.Length));
                     writer.Write(0x00000000);
-                    dataWriter.WriteAligned(label, 4);
+                    dataWriter.WriteAligned(label, align: 4, nullTerminate: true);
                     writer.Write((uint)(baseOffset + (Entries.Count * 0x18) + dataWriter.BaseStream.Length));
                     writer.Write(0x00000000);
-                    dataWriter.WriteAligned(data, 4);
+                    dataWriter.WriteAligned(data, align: 4, nullTerminate: true);
                 }
 
                 writer.Write(ms.ToArray());

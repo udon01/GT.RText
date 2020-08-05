@@ -34,11 +34,19 @@ namespace GT.RText
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (saveFileDialog.ShowDialog(this) != DialogResult.OK) return;
+            try
+            {
+                if (saveFileDialog.ShowDialog(this) != DialogResult.OK) return;
 
-            _rText.RText.Save(saveFileDialog.FileName);
+                _rText.RText.Save(saveFileDialog.FileName);
 
-            toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully.";
+                toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully.";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                toolStripStatusLabel.Text = $"Failed to save, unknown error, please contact the developer.";
+            }
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
