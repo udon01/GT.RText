@@ -166,7 +166,8 @@
             // 
             // tabControlLocalFiles
             // 
-            this.tabControlLocalFiles.Location = new System.Drawing.Point(0, 27);
+            this.tabControlLocalFiles.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tabControlLocalFiles.Location = new System.Drawing.Point(0, 24);
             this.tabControlLocalFiles.Name = "tabControlLocalFiles";
             this.tabControlLocalFiles.SelectedIndex = 0;
             this.tabControlLocalFiles.Size = new System.Drawing.Size(1228, 22);
@@ -176,12 +177,13 @@
             // listViewEntries
             // 
             this.listViewEntries.ContextMenuStrip = this.contextMenuStrip;
+            this.listViewEntries.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listViewEntries.FullRowSelect = true;
             this.listViewEntries.HideSelection = false;
-            this.listViewEntries.Location = new System.Drawing.Point(303, 49);
+            this.listViewEntries.Location = new System.Drawing.Point(293, 46);
             this.listViewEntries.MultiSelect = false;
             this.listViewEntries.Name = "listViewEntries";
-            this.listViewEntries.Size = new System.Drawing.Size(921, 376);
+            this.listViewEntries.Size = new System.Drawing.Size(935, 382);
             this.listViewEntries.TabIndex = 3;
             this.listViewEntries.UseCompatibleStateImageBehavior = false;
             this.listViewEntries.View = System.Windows.Forms.View.Details;
@@ -191,11 +193,12 @@
             // 
             // listViewCategories
             // 
+            this.listViewCategories.Dock = System.Windows.Forms.DockStyle.Left;
             this.listViewCategories.HideSelection = false;
-            this.listViewCategories.Location = new System.Drawing.Point(4, 49);
+            this.listViewCategories.Location = new System.Drawing.Point(0, 46);
             this.listViewCategories.MultiSelect = false;
             this.listViewCategories.Name = "listViewCategories";
-            this.listViewCategories.Size = new System.Drawing.Size(293, 376);
+            this.listViewCategories.Size = new System.Drawing.Size(293, 382);
             this.listViewCategories.TabIndex = 1;
             this.listViewCategories.UseCompatibleStateImageBehavior = false;
             this.listViewCategories.View = System.Windows.Forms.View.Details;
@@ -206,8 +209,8 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1228, 450);
-            this.Controls.Add(this.listViewCategories);
             this.Controls.Add(this.listViewEntries);
+            this.Controls.Add(this.listViewCategories);
             this.Controls.Add(this.tabControlLocalFiles);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.menuStrip);
