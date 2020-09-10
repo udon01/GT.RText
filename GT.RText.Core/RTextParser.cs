@@ -15,6 +15,26 @@ namespace GT.RText.Core
 
         public IRText RText { get; set; }
 
+        public string LocaleCode { get; set; }
+
+        public static readonly Dictionary<string, string> Locales = new Dictionary<string, string>()
+        {
+            { "DE", "German" },
+            { "EL", "Greek" },
+            { "ES", "Spanish" },
+            { "FR", "French" },
+            { "GB", "British" },
+            { "IT", "Italian" },
+            { "JP", "Japanese" },
+            { "KR", "Korean" },
+            { "PL", "Polish" },
+            { "PT", "Portugues" },
+            { "RU", "Russian" },
+            { "TR", "Turkish" },
+            { "TW", "Chinese" },
+            { "US", "American" }
+        };
+
         public RTextParser(string filePath, ILogWriter logWriter = null)
         {
             if (!File.Exists(filePath))

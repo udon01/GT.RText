@@ -35,6 +35,7 @@
             this.label_data = new System.Windows.Forms.Label();
             this.richTextBox_data = new System.Windows.Forms.RichTextBox();
             this.button_save = new System.Windows.Forms.Button();
+            this.applyAllLocalesCheckBox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_id)).BeginInit();
             this.SuspendLayout();
             // 
@@ -113,11 +114,24 @@
             this.button_save.UseVisualStyleBackColor = true;
             this.button_save.Click += new System.EventHandler(this.button_save_Click);
             // 
+            // applyAllLocalesCheckBox
+            // 
+            this.applyAllLocalesCheckBox.AutoSize = true;
+            this.applyAllLocalesCheckBox.Location = new System.Drawing.Point(424, 4);
+            this.applyAllLocalesCheckBox.Name = "applyAllLocalesCheckBox";
+            this.applyAllLocalesCheckBox.Size = new System.Drawing.Size(113, 17);
+            this.applyAllLocalesCheckBox.TabIndex = 7;
+            this.applyAllLocalesCheckBox.Text = "Apply to all locales";
+            this.applyAllLocalesCheckBox.UseVisualStyleBackColor = true;
+            this.applyAllLocalesCheckBox.Visible = false;
+            this.applyAllLocalesCheckBox.CheckedChanged += new System.EventHandler(this.applyAllLocalesCheckBox_CheckedChanged);
+            // 
             // RowEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(537, 309);
+            this.Controls.Add(this.applyAllLocalesCheckBox);
             this.Controls.Add(this.richTextBox_data);
             this.Controls.Add(this.button_save);
             this.Controls.Add(this.label_data);
@@ -143,5 +157,6 @@
         private System.Windows.Forms.Label label_data;
         private System.Windows.Forms.RichTextBox richTextBox_data;
         private System.Windows.Forms.Button button_save;
+        private System.Windows.Forms.CheckBox applyAllLocalesCheckBox;
     }
 }
