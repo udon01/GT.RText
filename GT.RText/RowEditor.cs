@@ -8,6 +8,9 @@ namespace GT.RText
         public int Id { get; set; }
         public string Label { get; set; }
         public string Data { get; set; }
+        public bool ApplyToAllLocales { get; set; }
+
+        private bool _isUiProject;
 
         public RowEditor()
         {
@@ -21,13 +24,17 @@ namespace GT.RText
             if (isWithoutId) HandleId(-1);
         }
 
-        public RowEditor(int id, string label, string data)
+        public RowEditor(int id, string label, string data, bool isUiProject)
         {
             InitializeComponent();
 
             Id = id;
             Label = label;
             Data = data;
+
+            _isUiProject = isUiProject;
+            if (_isUiProject)
+                applyAllLocalesCheckBox.Visible = true;
 
             textBox_label.Text = label;
             richTextBox_data.Text = data;
@@ -70,6 +77,11 @@ namespace GT.RText
         {
             this.DialogResult = DialogResult.OK;
             this.Close();
+        }
+
+        private void applyAllLocalesCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            ApplyToAllLocales = applyAllLocalesCheckBox.Checked;
         }
     }
 }

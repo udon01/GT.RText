@@ -1,15 +1,31 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
+
+// Required for the non crappy folder picker 
+// https://stackoverflow.com/q/11624298
+using Microsoft.WindowsAPICodePack.Dialogs;
+
 using GT.RText.Core;
 using GT.RText.Core.Exceptions;
 using GT.Shared.Logging;
+using System.Linq;
 
 namespace GT.RText
 {
     public partial class Main : Form
     {
-        private RTextParser _rText;
+        private bool _isUiFolderProject;
+
+        /// <summary>
+        /// List of the current RText's curently openned.
+        /// </summary>
+        private List<RTextParser> _rTexts;
+
         private ListViewColumnSorter _columnSorter;
+
+        public RTextParser CurrentRText => _rTexts[tabControlLocalFiles.SelectedIndex];
 
         public Main()
         {
@@ -17,6 +33,7 @@ namespace GT.RText
 
             listViewCategories.Columns.Add("Category", -2, HorizontalAlignment.Left);
 
+            _rTexts = new List<RTextParser>();
             _columnSorter = new ListViewColumnSorter();
             this.listViewEntries.ListViewItemSorter = _columnSorter;
             this.listViewEntries.Sorting = SortOrder.Ascending;
@@ -27,20 +44,91 @@ namespace GT.RText
         {
             if (openFileDialog.ShowDialog(this) != DialogResult.OK) return;
 
-            ClearListViews();
+            _rTexts.Clear();
+            _isUiFolderProject = false;
 
-            ReadRTextFile(openFileDialog.FileName);
+            ClearListViews();
+            ClearTabs();
+
+            var rtext = ReadRTextFile(openFileDialog.FileName);
+            if (rtext != null)
+            {
+                var tab = new TabPage(openFileDialog.FileName);
+                tabControlLocalFiles.TabPages.Add(tab);
+                DisplayCategories();
+            }
+        }
+
+        private void openFolderToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var dialog = new CommonOpenFileDialog();
+            dialog.EnsureFileExists = true;
+            dialog.EnsurePathExists = true;
+
+            dialog.IsFolderPicker = true;
+
+            if (dialog.ShowDialog() != CommonFileDialogResult.Ok) return;
+
+            _rTexts.Clear();
+
+            _isUiFolderProject = true;
+
+            ClearListViews();
+            ClearTabs();
+
+            string[] folders = Directory.GetDirectories(dialog.FileName, "*", SearchOption.TopDirectoryOnly);
+            foreach (var folder in folders)
+            {
+                string actualDirName = Path.GetFileName(folder);
+                if (RTextParser.Locales.TryGetValue(actualDirName, out string localeName))
+                {
+                    var rt2File = Path.Combine(folder, "rtext.rt2");
+                    if (!File.Exists(rt2File))
+                        continue;
+
+                    var rtext = ReadRTextFile(rt2File);
+                    if (rtext != null)
+                    {
+                        rtext.LocaleCode = actualDirName;
+                        var tab = new TabPage(localeName);
+                        tabControlLocalFiles.TabPages.Add(tab);
+                        DisplayCategories();
+                    }
+                }
+            }
         }
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
-                if (saveFileDialog.ShowDialog(this) != DialogResult.OK) return;
+                if (_isUiFolderProject)
+                {
+                    var dialog = new CommonOpenFileDialog();
+                    dialog.EnsureFileExists = true;
+                    dialog.EnsurePathExists = true;
 
-                _rText.RText.Save(saveFileDialog.FileName);
+                    dialog.IsFolderPicker = true;
 
-                toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully.";
+                    if (dialog.ShowDialog() != CommonFileDialogResult.Ok) return;
+
+                    foreach (var rtext in _rTexts)
+                    {
+                        string localePath = Path.Combine(dialog.FileName, rtext.LocaleCode);
+                        Directory.CreateDirectory(localePath);
+
+                        CurrentRText.RText.Save(Path.Combine(localePath, "rtext.rt2"));
+                    }
+
+                    toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully {_rTexts.Count} locales.";
+                }
+                else
+                {
+                    if (saveFileDialog.ShowDialog(this) != DialogResult.OK) return;
+
+                    CurrentRText.RText.Save(saveFileDialog.FileName);
+                    toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully.";
+                }
             }
             catch (Exception ex)
             {
@@ -123,11 +211,24 @@ namespace GT.RText
                 var lViewItem = listViewEntries.SelectedItems[0];
                 var rowData = ((int Index, int Id, string Label, string Data))lViewItem.Tag;
 
-                var rowEditor = new RowEditor(rowData.Id, rowData.Label, rowData.Data);
+                var rowEditor = new RowEditor(rowData.Id, rowData.Label, rowData.Data, _isUiFolderProject);
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
-                    category.EditRow(rowData.Index, rowEditor.Id, rowEditor.Label, rowEditor.Data);
-                    toolStripStatusLabel.Text = $"{rowData.Index} - edited";
+                    if (_isUiFolderProject && rowEditor.ApplyToAllLocales)
+                    {
+                        foreach (var rt in _rTexts)
+                        {
+                            var rCat = rt.RText.GetCategories().Where(cat => cat.Name == category.Name).FirstOrDefault();
+                            rCat.EditRow(rowData.Index, rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        }
+
+                        toolStripStatusLabel.Text = $"{rowData.Index} - edited to {_rTexts.Count} locales";
+                    }
+                    else
+                    {
+                        category.EditRow(rowData.Index, rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        toolStripStatusLabel.Text = $"{rowData.Index} - edited";
+                    }
 
                     DisplayEntries(category);
                 }
@@ -148,11 +249,24 @@ namespace GT.RText
                 var categoryLViewItem = listViewCategories.SelectedItems[0];
                 var category = (IRTextCategory)categoryLViewItem.Tag;
 
-                var rowEditor = new RowEditor(_rText.RText is RT03);
+                var rowEditor = new RowEditor(CurrentRText.RText is RT03) { ApplyToAllLocales = _isUiFolderProject };
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
-                    var rowId = category.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
-                    toolStripStatusLabel.Text = $"{rowEditor.Label} - added";
+                    if (_isUiFolderProject && rowEditor.ApplyToAllLocales)
+                    {
+                        foreach (var rt in _rTexts)
+                        {
+                            var rCat = rt.RText.GetCategories().Where(cat => cat.Name == category.Name).FirstOrDefault();
+                            category.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        }
+
+                        toolStripStatusLabel.Text = $"{rowEditor.Label} - added to {_rTexts.Count} locales";
+                    }
+                    else
+                    {
+                        var rowId = category.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        toolStripStatusLabel.Text = $"{rowEditor.Label} - added";
+                    }
 
                     DisplayEntries(category);
                 }
@@ -217,6 +331,11 @@ namespace GT.RText
         }
         #endregion
 
+        private void ClearTabs()
+        {
+            tabControlLocalFiles.TabPages.Clear();
+        }
+
         private void ClearListViews()
         {
             ClearCategoriesLView();
@@ -237,12 +356,13 @@ namespace GT.RText
             listViewEntries.EndUpdate();
         }
 
-        private void ReadRTextFile(string filePath)
+        private RTextParser ReadRTextFile(string filePath)
         {
             try
             {
-                _rText = new RTextParser(filePath, new ConsoleWriter());
-                DisplayCategories();
+                var rText = new RTextParser(filePath, new ConsoleWriter());
+                _rTexts.Add(rText);
+                return rText;
             }
             catch (XorKeyTooShortException ex)
             {
@@ -253,11 +373,13 @@ namespace GT.RText
             {
                 toolStripStatusLabel.Text = $"Error reading the file: {filePath}";
             }
+
+            return null;
         }
 
         private void DisplayCategories()
         {
-            if (_rText == null)
+            if (CurrentRText == null)
             {
                 MessageBox.Show("Read a valid RT04 file first.", "Oops...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -265,7 +387,7 @@ namespace GT.RText
 
             listViewCategories.BeginUpdate();
             listViewCategories.Items.Clear();
-            var categories = _rText.RText.GetCategories();
+            var categories = CurrentRText.RText.GetCategories();
             var items = new ListViewItem[categories.Count];
             for (var i = 0; i < categories.Count; i++)
             {
@@ -300,7 +422,7 @@ namespace GT.RText
 
             // Add column headers
             listViewEntries.Columns.Add("RecNo", -2, HorizontalAlignment.Left);
-            if ((_rText.RText is RT03) == false)
+            if ((CurrentRText.RText is RT03) == false)
                 listViewEntries.Columns.Add("Id", -2, HorizontalAlignment.Left);
             listViewEntries.Columns.Add("Label", -2, HorizontalAlignment.Left);
             listViewEntries.Columns.Add("String", -2, HorizontalAlignment.Left);
@@ -310,7 +432,7 @@ namespace GT.RText
             var items = new ListViewItem[entries.Count];
             for (var i = 0; i < entries.Count; i++)
             {
-                if ((_rText.RText is RT03) == false)
+                if ((CurrentRText.RText is RT03) == false)
                     items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Id.ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
                 else
                     items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
@@ -334,6 +456,15 @@ namespace GT.RText
 
             // Perform the sort with these new sort options.
             this.listViewEntries.Sort();
+        }
+
+        private void tabControlLocalFiles_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!_isUiFolderProject || tabControlLocalFiles.TabCount <= 0)
+                return;
+
+            ClearListViews();
+            DisplayCategories();
         }
     }
 }
