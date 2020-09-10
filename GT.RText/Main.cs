@@ -124,7 +124,7 @@ namespace GT.RText
                         string localePath = Path.Combine(dialog.FileName, rtext.LocaleCode);
                         Directory.CreateDirectory(localePath);
 
-                        CurrentRText.RText.Save(Path.Combine(localePath, "rtext.rt2"));
+                        rtext.RText.Save(Path.Combine(localePath, "rtext.rt2"));
                     }
 
                     toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully {_rTexts.Count} locales.";
