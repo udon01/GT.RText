@@ -77,6 +77,8 @@ namespace GT.RText
             ClearTabs();
 
             string[] folders = Directory.GetDirectories(dialog.FileName, "*", SearchOption.TopDirectoryOnly);
+
+            bool firstTab = true;
             foreach (var folder in folders)
             {
                 string actualDirName = Path.GetFileName(folder);
@@ -92,7 +94,12 @@ namespace GT.RText
                         rtext.LocaleCode = actualDirName;
                         var tab = new TabPage(localeName);
                         tabControlLocalFiles.TabPages.Add(tab);
-                        DisplayCategories();
+
+                        if (firstTab)
+                        {
+                            DisplayCategories();
+                            firstTab = false;
+                        }
                     }
                 }
             }
@@ -117,7 +124,7 @@ namespace GT.RText
                         string localePath = Path.Combine(dialog.FileName, rtext.LocaleCode);
                         Directory.CreateDirectory(localePath);
 
-                        CurrentRText.RText.Save(Path.Combine(localePath, "rtext.rt2"));
+                        rtext.RText.Save(Path.Combine(localePath, "rtext.rt2"));
                     }
 
                     toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully {_rTexts.Count} locales.";
