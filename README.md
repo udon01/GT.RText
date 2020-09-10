@@ -6,5 +6,11 @@ Supports editing RT03, RT04, RT05 and 50TR files.
 
 ### Credits:
 
-[Nenkai](https://github.com/Nenkai) - solving which cipher was being called to decipher the RT05 and 50TR strings.  
-[flatz](https://github.com/flatz/gttool) - for reverse engineering the said cipher (Salsa20).
+[Nenkai](https://github.com/Nenkai)<br>
+
+- solving which cipher was being called to decipher the RT05 and 50TR strings.<br>
+- Adding support for editing whole UI folder<br>
+
+[flatz](https://github.com/flatz/gttool)<br>
+
+- for reverse engineering the said cipher (Salsa20).<br>
