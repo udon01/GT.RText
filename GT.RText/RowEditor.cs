@@ -17,11 +17,15 @@ namespace GT.RText
             InitializeComponent();
         }
 
-        public RowEditor(bool isWithoutId)
+        public RowEditor(bool isWithoutId, bool isUiProject)
         {
             InitializeComponent();
 
             if (isWithoutId) HandleId(-1);
+
+            _isUiProject = isUiProject;
+            if (isUiProject)
+                applyAllLocalesCheckBox.Visible = true;
         }
 
         public RowEditor(int id, string label, string data, bool isUiProject)
