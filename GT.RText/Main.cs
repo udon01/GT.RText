@@ -304,7 +304,7 @@ namespace GT.RText
                 var categoryLViewItem = listViewCategories.SelectedItems[0];
                 var category = (IRTextCategory)categoryLViewItem.Tag;
 
-                var rowEditor = new RowEditor(CurrentRText.RText is RT03) { ApplyToAllLocales = _isUiFolderProject };
+                var rowEditor = new RowEditor(CurrentRText.RText is RT03, _isUiFolderProject);
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
                     if (_isUiFolderProject && rowEditor.ApplyToAllLocales)
@@ -312,7 +312,7 @@ namespace GT.RText
                         foreach (var rt in _rTexts)
                         {
                             var rCat = rt.RText.GetCategories().Where(cat => cat.Name == category.Name).FirstOrDefault();
-                            category.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                            rCat.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
                         }
 
                         toolStripStatusLabel.Text = $"{rowEditor.Label} - added to {_rTexts.Count} locales";
