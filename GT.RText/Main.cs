@@ -16,7 +16,16 @@ namespace GT.RText
 {
     public partial class Main : Form
     {
+        /// <summary>
+        /// Designates whether the currently loaded content is a project folder.
+        /// </summary>
         private bool _isUiFolderProject;
+
+        /// <summary>
+        /// Designates whether the currently loaded project is a GT6 locale project, 
+        /// where all RT2 files are contained within a single global folder with a file for each locale.
+        /// </summary>
+        private bool _isGT6AndAboveProjectStyle;
 
         /// <summary>
         /// List of the current RText's curently openned.
@@ -76,29 +85,60 @@ namespace GT.RText
             ClearListViews();
             ClearTabs();
 
-            string[] folders = Directory.GetDirectories(dialog.FileName, "*", SearchOption.TopDirectoryOnly);
-
             bool firstTab = true;
-            foreach (var folder in folders)
+            string[] files = Directory.GetFiles(dialog.FileName, "*", SearchOption.TopDirectoryOnly);
+
+            if (files.Any(f => RTextParser.Locales.ContainsKey(Path.GetFileNameWithoutExtension(f))))
             {
-                string actualDirName = Path.GetFileName(folder);
-                if (RTextParser.Locales.TryGetValue(actualDirName, out string localeName))
+                // Assume GT6+, where all RT2 files are all in one global folder compacted (i.e rtext/common/<LOCALE>.rt2)
+                _isGT6AndAboveProjectStyle = true;
+
+                foreach (var file in files)
                 {
-                    var rt2File = Path.Combine(folder, "rtext.rt2");
-                    if (!File.Exists(rt2File))
-                        continue;
-
-                    var rtext = ReadRTextFile(rt2File);
-                    if (rtext != null)
+                    string locale = Path.GetFileNameWithoutExtension(file);
+                    if (RTextParser.Locales.TryGetValue(locale, out string localeName))
                     {
-                        rtext.LocaleCode = actualDirName;
-                        var tab = new TabPage(localeName);
-                        tabControlLocalFiles.TabPages.Add(tab);
-
-                        if (firstTab)
+                        var rtext = ReadRTextFile(file);
+                        if (rtext != null)
                         {
-                            DisplayCategories();
-                            firstTab = false;
+                            rtext.LocaleCode = locale;
+                            var tab = new TabPage(localeName);
+                            tabControlLocalFiles.TabPages.Add(tab);
+
+                            if (firstTab)
+                            {
+                                DisplayCategories();
+                                firstTab = false;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Locale files are located per-UI project, in their own folder (i.e arcade/US/rtext.rt2)
+                string[] folders = Directory.GetDirectories(dialog.FileName, "*", SearchOption.TopDirectoryOnly);
+                foreach (var folder in folders)
+                {
+                    string actualDirName = Path.GetFileName(folder);
+                    if (RTextParser.Locales.TryGetValue(actualDirName, out string localeName))
+                    {
+                        var rt2File = Path.Combine(folder, "rtext.rt2");
+                        if (!File.Exists(rt2File))
+                            continue;
+
+                        var rtext = ReadRTextFile(rt2File);
+                        if (rtext != null)
+                        {
+                            rtext.LocaleCode = actualDirName;
+                            var tab = new TabPage(localeName);
+                            tabControlLocalFiles.TabPages.Add(tab);
+
+                            if (firstTab)
+                            {
+                                DisplayCategories();
+                                firstTab = false;
+                            }
                         }
                     }
                 }
@@ -121,10 +161,18 @@ namespace GT.RText
 
                     foreach (var rtext in _rTexts)
                     {
-                        string localePath = Path.Combine(dialog.FileName, rtext.LocaleCode);
-                        Directory.CreateDirectory(localePath);
+                        if (_isGT6AndAboveProjectStyle)
+                        {
+                            string localePath = Path.Combine(dialog.FileName, $"{rtext.LocaleCode}.rt2");
+                            rtext.RText.Save(localePath);
+                        }
+                        else
+                        {
+                            string localePath = Path.Combine(dialog.FileName, rtext.LocaleCode);
+                            Directory.CreateDirectory(localePath);
 
-                        rtext.RText.Save(Path.Combine(localePath, "rtext.rt2"));
+                            rtext.RText.Save(Path.Combine(localePath, "rtext.rt2"));
+                        }
                     }
 
                     toolStripStatusLabel.Text = $"{saveFileDialog.FileName} - saved successfully {_rTexts.Count} locales.";

@@ -19,20 +19,29 @@ namespace GT.RText.Core
 
         public static readonly Dictionary<string, string> Locales = new Dictionary<string, string>()
         {
+            { "BP", "Portuguese (Brazillian)" },
+            { "CN", "Chinese (China)" },
+            { "CZ", "Czech" },
+            { "DK", "Danish" }, // Stubbed in GT6
             { "DE", "German" },
             { "EL", "Greek" },
             { "ES", "Spanish" },
+            { "FI", "Finnish" }, // Stubbed in GT6
             { "FR", "French" },
             { "GB", "British" },
+            { "HU", "Magyar (Hungary)" },
             { "IT", "Italian" },
             { "JP", "Japanese" },
             { "KR", "Korean" },
+            { "MS", "Spanish (Mexican)" },
+            { "NO", "NO" }, // TODO
             { "NL", "Dutch" },
             { "PL", "Polish" },
             { "PT", "Portuguese" },
             { "RU", "Russian" },
+            { "SE", "SE" }, // TODO
             { "TR", "Turkish" },
-            { "TW", "Chinese" },
+            { "TW", "Chinese (Taiwan)" },
             { "US", "American" }
         };
 
