@@ -1,116 +1,94 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using GT.RText.Core.Structs;
+using System.Text;
+using System.Linq;
+
 using GT.Shared.Logging;
 using GT.Shared.Polyphony;
 
 namespace GT.RText.Core
 {
-    public class RT03 : IRText
+    /// <summary>
+    /// Gran Turismo 4/Tourist Trophy/PSP/GT5P Localization Strings
+    /// </summary>
+    public class RT03 : RTextBase
     {
-        private readonly ILogWriter _logWriter;
-        private readonly byte[] _data;
-        private RT03Header _header;
+        public static readonly string Magic = "RT03";
+        public const int HeaderSize = 0x10;
 
-        private List<IRTextCategory> _categories { get; set; }
+        private readonly ILogWriter _logWriter;
 
         public RT03(string filePath, ILogWriter logWriter = null)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException();
 
-            _data = File.ReadAllBytes(filePath);
+
             _logWriter = logWriter;
-
-            Read();
         }
 
-        public RT03(byte[] data, ILogWriter logWriter = null)
+        public RT03(ILogWriter logWriter = null)
         {
-            _data = data;
             _logWriter = logWriter;
-
-            Read();
         }
 
-        public List<IRTextCategory> GetCategories()
-        {
-            return _categories;
-        }
-
-        public void GetCategoryByIndex()
+        public void GetPageByIndex()
         {
             throw new NotImplementedException();
         }
 
-        public void GetStringByCategory(int categoryIndex)
+        public void GetStringByPage(int pageIndex)
         {
             throw new NotImplementedException();
         }
 
-        public void Save(string filePath)
-        {
-            File.WriteAllBytes(filePath, Write());
-        }
 
-        private void Read()
+        public override void Read(byte[] data)
         {
-            ReadHeader();
-            ReadCategories();
-        }
-
-        private void ReadHeader()
-        {
-            using (var ms = new MemoryStream(_data))
+            using (var ms = new MemoryStream(data))
             using (var reader = new EndianBinReader(ms, EndianType.LITTLE_ENDIAN))
             {
-                _header = new RT03Header(reader);
-            }
-        }
+                reader.BaseStream.Position = 0;
+                if (reader.ReadString(4) != Magic)
+                    throw new Exception("Invalid magic, doesn't match RT03.");
 
-        private void ReadCategories()
-        {
-            _categories = new List<IRTextCategory>();
-            for (int i = 0; i < _header.EntryCount; i++)
-            {
-                var category = new RT03Category(_data, i, _logWriter);
-                category.Read();
-                _categories.Add(category);
+                reader.ReadInt32(); // Relocation Ptr
+                reader.ReadUInt32(); // Empty - skipped by GT4
+                int entryCount = reader.ReadInt32();
+
+                for (int i = 0; i < entryCount; i++)
+                {
+                    ms.Position = HeaderSize + (i * 0x10);
+                    var page = new RT03Page(_logWriter);
+                    page.Read(reader);
+                    _pages.Add(page.Name, page);
+                }
             }
         }
 
         #region Saving
-        private byte[] Write()
+        public override void Save(string fileName)
         {
-            using (var ms = new MemoryStream())
-            using (var ms2 = new MemoryStream())
-            using (var ms3 = new MemoryStream())
-            using (var headerWriter = new EndianBinWriter(ms, EndianType.LITTLE_ENDIAN))
-            using (var categoryMetaWriter = new EndianBinWriter(ms2, EndianType.LITTLE_ENDIAN))
-            using (var entryWriter = new EndianBinWriter(ms3, EndianType.LITTLE_ENDIAN))
+            using (var ms = new FileStream(fileName, FileMode.Create))
+            using (var bs = new EndianBinWriter(ms, EndianType.LITTLE_ENDIAN))
             {
-                // Write the header
-                _header.EntryCount = (uint)_categories.Count;
-                _header.Save(headerWriter);
+                bs.Write(Encoding.ASCII.GetBytes(Magic));
+                bs.Write(0);
+                bs.Write(0);
+                bs.Write(_pages.Count);
 
-                // Write categories
-                foreach (var category in _categories)
+                int i = 0;
+                int baseDataPos = HeaderSize + (_pages.Count * 0x10);
+                foreach (var pagePair in _pages)
                 {
-                    // Write category title offset in the meta data
-                    categoryMetaWriter.Write((uint)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length));
-                    categoryMetaWriter.Write(category.Entries.Count);
-                    entryWriter.WriteNullTerminatedString(category.Name, 4);
-                    categoryMetaWriter.Write((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) +  entryWriter.BaseStream.Length));
-                    categoryMetaWriter.Write(0x5E5E5E5E);
-
-                    category.Save((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length), entryWriter);
+                    int baseEntryOffset = (int)HeaderSize + (i * 0x10);
+                    pagePair.Value.Write(bs, baseEntryOffset, baseDataPos);
+                    baseDataPos = (int)ms.Position;
+                    i++;
                 }
 
-                headerWriter.Write(ms2.ToArray());
-                headerWriter.Write(ms3.ToArray());
-
-                return ms.ToArray();
+                
             }
         }
         #endregion

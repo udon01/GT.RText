@@ -11,9 +11,8 @@ namespace GT.RText.Core
     public class RTextParser
     {
         private readonly ILogWriter _logWriter;
-        private readonly byte[] _data;
 
-        public IRText RText { get; set; }
+        public RTextBase RText { get; set; }
 
         public string LocaleCode { get; set; }
 
@@ -34,58 +33,46 @@ namespace GT.RText.Core
             { "JP", "Japanese" },
             { "KR", "Korean" },
             { "MS", "Spanish (Mexican)" },
-            { "NO", "NO" }, // TODO
+            { "NO", "Norwegian" },
             { "NL", "Dutch" },
             { "PL", "Polish" },
             { "PT", "Portuguese" },
             { "RU", "Russian" },
-            { "SE", "SE" }, // TODO
+            { "SE", "Swedish" },
             { "TR", "Turkish" },
             { "TW", "Chinese (Taiwan)" },
             { "US", "American" }
         };
 
-        public RTextParser(string filePath, ILogWriter logWriter = null)
+        public RTextParser(ILogWriter logWriter = null)
         {
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException();
-
-            _data = File.ReadAllBytes(filePath);
             _logWriter = logWriter;
-
-            Read();
         }
 
-        public RTextParser(byte[] data, ILogWriter logWriter = null)
+        public void Read(byte[] data)
         {
-            _data = data;
-            _logWriter = logWriter;
-
-            Read();
-        }
-
-        private void Read()
-        {
-            using (var ms = new MemoryStream(_data))
+            using (var ms = new MemoryStream(data))
             using (var reader = new EndianBinReader(ms))
             {
                 switch (reader.ReadUInt32())
                 {
                     case Constants.RT03_MAGIC:
-                        RText = new RT03(_data, _logWriter);
+                        RText = new RT03(_logWriter);
                         break;
                     case Constants.RT04_MAGIC:
-                        RText = new RT04(_data, _logWriter);
+                        RText = new RT04(_logWriter);
                         break;
                     case Constants.RT05_MAGIC:
-                        RText = new RT05(_data, _logWriter);
+                        RText = new RT05( _logWriter);
                         break;
                     case Constants._50TR_MAGIC:
-                        RText = new _50TR(_data, _logWriter);
+                        RText = new _50TR(_logWriter);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException("Unknown header magic.");
                 }
+
+                RText.Read(data);
             }
         }
     }

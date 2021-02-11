@@ -40,7 +40,7 @@ namespace GT.RText
         {
             InitializeComponent();
 
-            listViewCategories.Columns.Add("Category", -2, HorizontalAlignment.Left);
+            listViewPages.Columns.Add("Category", -2, HorizontalAlignment.Left);
 
             _rTexts = new List<RTextParser>();
             _columnSorter = new ListViewColumnSorter();
@@ -64,7 +64,7 @@ namespace GT.RText
             {
                 var tab = new TabPage(openFileDialog.FileName);
                 tabControlLocalFiles.TabPages.Add(tab);
-                DisplayCategories();
+                DisplayPages();
             }
         }
 
@@ -107,7 +107,7 @@ namespace GT.RText
 
                             if (firstTab)
                             {
-                                DisplayCategories();
+                                DisplayPages();
                                 firstTab = false;
                             }
                         }
@@ -136,7 +136,7 @@ namespace GT.RText
 
                             if (firstTab)
                             {
-                                DisplayCategories();
+                                DisplayPages();
                                 firstTab = false;
                             }
                         }
@@ -209,10 +209,10 @@ namespace GT.RText
 
         private void Main_SizeChanged(object sender, EventArgs e)
         {
-            listViewCategories.BeginUpdate();
-            listViewCategories.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-            listViewCategories.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-            listViewCategories.EndUpdate();
+            listViewPages.BeginUpdate();
+            listViewPages.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            listViewPages.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+            listViewPages.EndUpdate();
 
             listViewEntries.BeginUpdate();
             listViewEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
@@ -225,16 +225,16 @@ namespace GT.RText
         {
             listViewEntries.Items.Clear();
 
-            if (listViewCategories.SelectedItems.Count <= 0 || listViewCategories.SelectedItems[0] == null) return;
+            if (listViewPages.SelectedItems.Count <= 0 || listViewPages.SelectedItems[0] == null) return;
 
             try
             {
-                var lViewItem = listViewCategories.SelectedItems[0];
-                var category = (IRTextCategory)lViewItem.Tag;
+                var lViewItem = listViewPages.SelectedItems[0];
+                var page = (RTextPageBase)lViewItem.Tag;
 
-                DisplayEntries(category);
+                DisplayEntries(page);
 
-                toolStripStatusLabel.Text = $"{category.Name} - parsed with {category.Entries.Count} entries.";
+                toolStripStatusLabel.Text = $"{page.Name} - parsed with {page.PairUnits.Count} entries.";
             }
             catch (Exception ex)
             {
@@ -255,37 +255,37 @@ namespace GT.RText
 
         private void editToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewCategories.SelectedItems.Count <= 0 || listViewCategories.SelectedItems[0] == null) return;
+            if (listViewPages.SelectedItems.Count <= 0 || listViewPages.SelectedItems[0] == null) return;
             if (listViewEntries.SelectedItems.Count <= 0 || listViewEntries.SelectedItems[0] == null) return;
 
             try
             {
-                var categoryLViewItem = listViewCategories.SelectedItems[0];
-                var category = (IRTextCategory)categoryLViewItem.Tag;
+                var categoryLViewItem = listViewPages.SelectedItems[0];
+                var page = (RTextPageBase)categoryLViewItem.Tag;
 
                 var lViewItem = listViewEntries.SelectedItems[0];
-                var rowData = ((int Index, int Id, string Label, string Data))lViewItem.Tag;
+                RTextPairUnit rowData = (RTextPairUnit)lViewItem.Tag;
 
-                var rowEditor = new RowEditor(rowData.Id, rowData.Label, rowData.Data, _isUiFolderProject);
+                var rowEditor = new RowEditor(rowData.ID, rowData.Label, rowData.Value, _isUiFolderProject);
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
                     if (_isUiFolderProject && rowEditor.ApplyToAllLocales)
                     {
                         foreach (var rt in _rTexts)
                         {
-                            var rCat = rt.RText.GetCategories().Where(cat => cat.Name == category.Name).FirstOrDefault();
-                            rCat.EditRow(rowData.Index, rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                            var rtPage = rt.RText.GetPages()[page.Name];
+                            rtPage.EditRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
                         }
 
-                        toolStripStatusLabel.Text = $"{rowData.Index} - edited to {_rTexts.Count} locales";
+                        toolStripStatusLabel.Text = $"{rowEditor.Label} - edited to {_rTexts.Count} locales";
                     }
                     else
                     {
-                        category.EditRow(rowData.Index, rowEditor.Id, rowEditor.Label, rowEditor.Data);
-                        toolStripStatusLabel.Text = $"{rowData.Index} - edited";
+                        page.EditRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        toolStripStatusLabel.Text = $"{rowEditor.Label} - edited";
                     }
 
-                    DisplayEntries(category);
+                    DisplayEntries(page);
                 }
             }
             catch (Exception ex)
@@ -297,12 +297,12 @@ namespace GT.RText
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewCategories.SelectedItems.Count <= 0 || listViewCategories.SelectedItems[0] == null) return;
+            if (listViewPages.SelectedItems.Count <= 0 || listViewPages.SelectedItems[0] == null) return;
 
             try
             {
-                var categoryLViewItem = listViewCategories.SelectedItems[0];
-                var category = (IRTextCategory)categoryLViewItem.Tag;
+                var pageLViewItem = listViewPages.SelectedItems[0];
+                var page = (RTextPageBase)pageLViewItem.Tag;
 
                 var rowEditor = new RowEditor(CurrentRText.RText is RT03, _isUiFolderProject);
                 if (rowEditor.ShowDialog() == DialogResult.OK)
@@ -311,19 +311,19 @@ namespace GT.RText
                     {
                         foreach (var rt in _rTexts)
                         {
-                            var rCat = rt.RText.GetCategories().Where(cat => cat.Name == category.Name).FirstOrDefault();
-                            rCat.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                            var rPage = rt.RText.GetPages()[page.Name];
+                            rPage.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
                         }
 
                         toolStripStatusLabel.Text = $"{rowEditor.Label} - added to {_rTexts.Count} locales";
                     }
                     else
                     {
-                        var rowId = category.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        var rowId = page.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
                         toolStripStatusLabel.Text = $"{rowEditor.Label} - added";
                     }
 
-                    DisplayEntries(category);
+                    DisplayEntries(page);
                 }
             }
             catch (Exception ex)
@@ -335,25 +335,25 @@ namespace GT.RText
 
         private void removeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewCategories.SelectedItems.Count <= 0 || listViewCategories.SelectedItems[0] == null) return;
+            if (listViewPages.SelectedItems.Count <= 0 || listViewPages.SelectedItems[0] == null) return;
             if (listViewEntries.SelectedItems.Count <= 0 || listViewEntries.SelectedItems[0] == null) return;
 
             try
             {
-                var categoryLViewItem = listViewCategories.SelectedItems[0];
-                var category = (IRTextCategory)categoryLViewItem.Tag;
+                var pageLViewItem = listViewPages.SelectedItems[0];
+                var page = (RTextPageBase)pageLViewItem.Tag;
 
                 var lViewItem = listViewEntries.SelectedItems[0];
-                var rowData = ((int Index, int Id, string Label, string Data))lViewItem.Tag;
+                RTextPairUnit rowData = (RTextPairUnit)lViewItem.Tag;
 
                 if (MessageBox.Show($"Are you sure you want to delete {rowData.Label}?", "Delete confirmation", MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Information) == DialogResult.Yes)
                 {
-                    category.DeleteRow(rowData.Index);
+                    page.DeleteRow(rowData.Label);
 
-                    toolStripStatusLabel.Text = $"{rowData.Index} - deleted";
+                    toolStripStatusLabel.Text = $"{rowData.Label} - deleted";
 
-                    DisplayEntries(category);
+                    DisplayEntries(page);
                 }
             }
             catch (Exception ex)
@@ -399,9 +399,9 @@ namespace GT.RText
 
         private void ClearCategoriesLView()
         {
-            listViewCategories.BeginUpdate();
-            listViewCategories.Items.Clear();
-            listViewCategories.EndUpdate();
+            listViewPages.BeginUpdate();
+            listViewPages.Items.Clear();
+            listViewPages.EndUpdate();
         }
 
         private void ClearEntriesLView()
@@ -415,7 +415,9 @@ namespace GT.RText
         {
             try
             {
-                var rText = new RTextParser(filePath, new ConsoleWriter());
+                var rText = new RTextParser(new ConsoleWriter());
+                byte[] data = File.ReadAllBytes(filePath);
+                rText.Read(data);
                 _rTexts.Add(rText);
                 return rText;
             }
@@ -432,7 +434,7 @@ namespace GT.RText
             return null;
         }
 
-        private void DisplayCategories()
+        private void DisplayPages()
         {
             if (CurrentRText == null)
             {
@@ -440,23 +442,23 @@ namespace GT.RText
                 return;
             }
 
-            listViewCategories.BeginUpdate();
-            listViewCategories.Items.Clear();
-            var categories = CurrentRText.RText.GetCategories();
-            var items = new ListViewItem[categories.Count];
-            for (var i = 0; i < categories.Count; i++)
-            {
-                items[i] = new ListViewItem(categories[i].Name) { Tag = categories[i] };
-            }
+            listViewPages.BeginUpdate();
+            listViewPages.Items.Clear();
+            var pages = CurrentRText.RText.GetPages();
+            var items = new ListViewItem[pages.Count];
 
-            listViewCategories.Items.AddRange(items);
+            int i = 0;
+            foreach (var page in pages)
+                items[i++] = new ListViewItem(page.Key) { Tag = page.Value };
 
-            listViewCategories.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-            listViewCategories.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-            listViewCategories.EndUpdate();
+            listViewPages.Items.AddRange(items);
+
+            listViewPages.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            listViewPages.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+            listViewPages.EndUpdate();
         }
 
-        private void DisplayEntries(IRTextCategory category)
+        private void DisplayEntries(RTextPageBase page)
         {
             listViewEntries.BeginUpdate();
             SortEntriesListView(0);
@@ -483,14 +485,17 @@ namespace GT.RText
             listViewEntries.Columns.Add("String", -2, HorizontalAlignment.Left);
 
             // Add entries
-            var entries = category.Entries;
+            var entries = page.PairUnits;
             var items = new ListViewItem[entries.Count];
-            for (var i = 0; i < entries.Count; i++)
+
+            int i = 0;
+            foreach (var entry in entries)
             {
                 if ((CurrentRText.RText is RT03) == false)
-                    items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Id.ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
+                    items[i] = new ListViewItem(new[] { i.ToString(), entry.Value.ID.ToString(), entry.Value.Label, entry.Value.Value }) { Tag = entry.Value };
                 else
-                    items[i] = new ListViewItem(new[] { (i + 1).ToString(), entries[i].Label, entries[i].Data }) { Tag = entries[i] };
+                    items[i] = new ListViewItem(new[] { i.ToString(), entry.Value.Label, entry.Value.Value }) { Tag = entry.Value };
+                i++;
             }
 
             listViewEntries.Items.AddRange(items);
@@ -519,7 +524,7 @@ namespace GT.RText
                 return;
 
             ClearListViews();
-            DisplayCategories();
+            DisplayPages();
         }
     }
 }

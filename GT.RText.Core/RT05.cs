@@ -2,105 +2,89 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using GT.RText.Core.Structs;
 using GT.Shared.Logging;
 using GT.Shared.Polyphony;
 
 namespace GT.RText.Core
 {
-    public class RT05 : IRText
+    /// <summary>
+    /// Gran Turismo 6 Localization Strings (Encryption)
+    /// </summary>
+    public class RT05 : RTextBase
     {
-        private readonly ILogWriter _logWriter;
-        private readonly byte[] _data;
-        private RT05Header _header;
+        public static readonly string Magic = "RT05";
+        public const int HeaderSize = 0x20;
 
-        private List<IRTextCategory> _categories { get; set; }
+        private readonly ILogWriter _logWriter;
 
         public RT05(string filePath, ILogWriter logWriter = null)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException();
 
-            _data = File.ReadAllBytes(filePath);
+
             _logWriter = logWriter;
-
-            Read();
         }
 
-        public RT05(byte[] data, ILogWriter logWriter = null)
+        public RT05(ILogWriter logWriter = null)
         {
-            _data = data;
             _logWriter = logWriter;
-
-            Read();
         }
 
-        public List<IRTextCategory> GetCategories()
+        public void GetCategoryByIndex()
         {
-            return _categories;
+            throw new NotImplementedException();
         }
 
-        private void Read()
+        public void GetStringByCategory(int categoryIndex)
         {
-            ReadHeader();
-            ReadCategories();
+            throw new NotImplementedException();
         }
 
-        private void ReadHeader()
+        public override void Read(byte[] data)
         {
-            using (var ms = new MemoryStream(_data))
-            using (var reader = new EndianBinReader(ms))
+            using (var ms = new MemoryStream(data))
+            using (var reader = new EndianBinReader(ms, EndianType.BIG_ENDIAN))
             {
-                _header = new RT05Header(reader);
-            }
-        }
+                reader.BaseStream.Position = 0;
+                if (reader.ReadString(4) != Magic)
+                    throw new Exception($"Invalid magic, doesn't match {Magic}.");
 
-        private void ReadCategories()
-        {
-            _categories = new List<IRTextCategory>();
-            for (int i = 0; i < _header.EntryCount; i++)
-            {
-                var category = new RT05Category(_header, _data, i, _logWriter);
-                category.Read();
-                _categories.Add(category);
-            }
-        }
+                int entryCount = reader.ReadInt32();
 
-        public void Save(string filePath)
-        {
-            File.WriteAllBytes(filePath, Write());
-        }
+                // Relocation ptr is at 0x10
 
-        private byte[] Write()
-        {
-            using (var ms = new MemoryStream())
-            using (var ms2 = new MemoryStream())
-            using (var ms3 = new MemoryStream())
-            using (var headerWriter = new EndianBinWriter(ms))
-            using (var categoryMetaWriter = new EndianBinWriter(ms2))
-            using (var entryWriter = new EndianBinWriter(ms3))
-            {
-                // Write the header
-                _header.EntryCount = (uint)_categories.Count;
-                _header.Save(headerWriter);
+                // Data starts at 0x20
 
-                // Write categories
-                foreach (var category in _categories)
+                for (int i = 0; i < entryCount; i++)
                 {
-                    // Write category title offset in the meta data
-                    categoryMetaWriter.Write((uint)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length));
-                    categoryMetaWriter.Write(category.Entries.Count);
-                    categoryMetaWriter.Write(0x00000000);
-                    entryWriter.WriteNullTerminatedString(category.Name, 4);
-                    categoryMetaWriter.Write((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length));
-
-                    category.Save((int)(headerWriter.BaseStream.Length + (_categories.Count * 0x10) + entryWriter.BaseStream.Length), entryWriter);
+                    ms.Position = HeaderSize + (i * 0x10);
+                    var page = new RT05Page(_logWriter);
+                    page.Read(reader);
+                    _pages.Add(page.Name, page);
                 }
+            }
+        }
 
-                headerWriter.Write(ms2.ToArray());
-                headerWriter.Write(ms3.ToArray());
+        public override void Save(string fileName)
+        {
+            using (var ms = new FileStream(fileName, FileMode.Create))
+            using (var bs = new EndianBinWriter(ms, EndianType.BIG_ENDIAN))
+            {
+                bs.Write(Encoding.ASCII.GetBytes(Magic));
+                bs.Write(_pages.Count);
+                bs.Write((byte)1); // "Obfuscated", we don't know, eboot doesn't read it
+                bs.BaseStream.Position = HeaderSize;
 
-                return ms.ToArray();
+                int i = 0;
+                int baseDataPos = HeaderSize + (_pages.Count * 0x10);
+                foreach (var pagePair in _pages)
+                {
+                    int baseEntryOffset = (int)HeaderSize + (i * 0x10);
+                    pagePair.Value.Write(bs, baseEntryOffset, baseDataPos);
+                    baseDataPos = (int)ms.Position;
+                    i++;
+                }
             }
         }
     }

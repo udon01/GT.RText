@@ -42,7 +42,7 @@
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabControlLocalFiles = new System.Windows.Forms.TabControl();
             this.listViewEntries = new System.Windows.Forms.ListView();
-            this.listViewCategories = new System.Windows.Forms.ListView();
+            this.listViewPages = new System.Windows.Forms.ListView();
             this.menuStrip.SuspendLayout();
             this.contextMenuStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -193,16 +193,16 @@
             // 
             // listViewCategories
             // 
-            this.listViewCategories.Dock = System.Windows.Forms.DockStyle.Left;
-            this.listViewCategories.HideSelection = false;
-            this.listViewCategories.Location = new System.Drawing.Point(0, 46);
-            this.listViewCategories.MultiSelect = false;
-            this.listViewCategories.Name = "listViewCategories";
-            this.listViewCategories.Size = new System.Drawing.Size(293, 382);
-            this.listViewCategories.TabIndex = 1;
-            this.listViewCategories.UseCompatibleStateImageBehavior = false;
-            this.listViewCategories.View = System.Windows.Forms.View.Details;
-            this.listViewCategories.SelectedIndexChanged += new System.EventHandler(this.listViewCategories_SelectedIndexChanged);
+            this.listViewPages.Dock = System.Windows.Forms.DockStyle.Left;
+            this.listViewPages.HideSelection = false;
+            this.listViewPages.Location = new System.Drawing.Point(0, 46);
+            this.listViewPages.MultiSelect = false;
+            this.listViewPages.Name = "listViewCategories";
+            this.listViewPages.Size = new System.Drawing.Size(293, 382);
+            this.listViewPages.TabIndex = 1;
+            this.listViewPages.UseCompatibleStateImageBehavior = false;
+            this.listViewPages.View = System.Windows.Forms.View.Details;
+            this.listViewPages.SelectedIndexChanged += new System.EventHandler(this.listViewCategories_SelectedIndexChanged);
             // 
             // Main
             // 
@@ -210,7 +210,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1228, 450);
             this.Controls.Add(this.listViewEntries);
-            this.Controls.Add(this.listViewCategories);
+            this.Controls.Add(this.listViewPages);
             this.Controls.Add(this.tabControlLocalFiles);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.menuStrip);
@@ -245,7 +245,7 @@
         private System.Windows.Forms.ToolStripMenuItem removeToolStripMenuItem;
         private System.Windows.Forms.TabControl tabControlLocalFiles;
         private System.Windows.Forms.ListView listViewEntries;
-        private System.Windows.Forms.ListView listViewCategories;
+        private System.Windows.Forms.ListView listViewPages;
         private System.Windows.Forms.ToolStripMenuItem openFolderToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
