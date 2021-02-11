@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Linq;
 
 using GT.Shared;
 using GT.Shared.Crypt;
@@ -62,27 +63,35 @@ namespace GT.RText.Core
             writer.BaseStream.Position += EntrySize * PairUnits.Count;
             int lastStringPos = (int)writer.BaseStream.Position;
 
+
+            // Setup for binary searching - strings are sorted by length, then their encrypted values
+            // Override the sorting logic - couldn't find a better way to structure this to make it work across all versions
+            // Not the most efficient
+            var orderedPairs = PairUnits.Values.OrderBy(
+                e => Encrypt(Encoding.UTF8.GetBytes(e.Label), Constants.KEY.AlignString(0x20)),
+                ByteBufferComparer.Default);
+
             // Write our strings
             int j = 0;
-            foreach (var pair in PairUnits)
+            foreach (var pair in orderedPairs)
             {
                 writer.BaseStream.Position = lastStringPos;
 
                 int labelOffset = (int)writer.BaseStream.Position;
-                var encLabel = Encrypt(Encoding.UTF8.GetBytes(pair.Value.Label), Constants.KEY.AlignString(0x20));
+                var encLabel = Encrypt(Encoding.UTF8.GetBytes(pair.Label), Constants.KEY.AlignString(0x20));
                 writer.WriteAligned(encLabel, 4, nullTerminate: true);
 
                 int valueOffset = (int)writer.BaseStream.Position;
-                var encValue = Encrypt(Encoding.UTF8.GetBytes(pair.Value.Value), Constants.KEY.AlignString(0x20));
+                var encValue = Encrypt(Encoding.UTF8.GetBytes(pair.Value), Constants.KEY.AlignString(0x20));
                 writer.WriteAligned(encValue, 4, nullTerminate: true);
 
                 lastStringPos = (int)writer.BaseStream.Position;
 
                 // Write the offsets
                 writer.BaseStream.Position = pairUnitOffset + (j * EntrySize);
-                writer.Write(pair.Value.ID);
-                writer.Write((ushort)(pair.Value.Label.Length + 1));
-                writer.Write((ushort)(pair.Value.Value.Length + 1));
+                writer.Write(pair.ID);
+                writer.Write((ushort)(pair.Label.Length + 1));
+                writer.Write((ushort)(pair.Value.Length + 1));
                 writer.Write(labelOffset);
                 writer.Write(valueOffset);
 
