@@ -307,6 +307,12 @@ namespace GT.RText
                 var rowEditor = new RowEditor(CurrentRText.RText is RT03, _isUiFolderProject);
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
+                    if (page.PairUnits.ContainsKey(rowEditor.Label))
+                    {
+                        MessageBox.Show("This label already exists in this category.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
                     if (_isUiFolderProject && rowEditor.ApplyToAllLocales)
                     {
                         foreach (var rt in _rTexts)
