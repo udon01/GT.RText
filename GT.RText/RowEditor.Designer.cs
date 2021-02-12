@@ -71,7 +71,7 @@
             this.label_label.Name = "label_label";
             this.label_label.Size = new System.Drawing.Size(537, 23);
             this.label_label.TabIndex = 2;
-            this.label_label.Text = "Label";
+            this.label_label.Text = "Label (Must be Unique)";
             this.label_label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // textBox_label
