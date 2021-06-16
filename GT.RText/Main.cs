@@ -447,7 +447,7 @@ namespace GT.RText
 
             if (_isUiFolderProject)
             {
-                var res = MessageBox.Show($"Add to all openned locales?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Information);
+                var res = MessageBox.Show($"Add to all opened locales?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Information);
                 if (res == DialogResult.Yes)
                 {
 

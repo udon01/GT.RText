@@ -121,6 +121,9 @@ namespace GT.RText.Core
 
         static byte[] Decrypt(byte[] encrypted, string key)
         {
+            if (encrypted.Length == 0)
+                return encrypted;
+
             using (SymmetricAlgorithm salsa20 = new Salsa20())
             {
                 var dataKey = new byte[8];
@@ -135,6 +138,9 @@ namespace GT.RText.Core
 
         static byte[] Encrypt(byte[] input, string key)
         {
+            if (input.Length == 0)
+                return Array.Empty<byte>();
+
             using (SymmetricAlgorithm salsa20 = new Salsa20())
             {
                 var dataKey = new byte[8];
