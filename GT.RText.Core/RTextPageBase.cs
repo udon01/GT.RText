@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 using GT.Shared;
 
@@ -29,6 +30,21 @@ namespace GT.RText.Core
 
         public void DeleteRow(string label)
             => PairUnits.Remove(label);
+
+        public int GetLastId()
+            => PairUnits.Max(p => p.Value.ID);
+
+        public void AddPairs(Dictionary<string, string> pairs)
+        {
+            int lastId = GetLastId();
+            foreach (var elem in pairs)
+            {
+                if (PairUnits.TryGetValue(elem.Key, out RTextPairUnit pair))
+                    pair.Value = elem.Value;
+                else
+                    AddRow(++lastId, elem.Key, elem.Value);
+            }
+        }
 
         public abstract void Read(EndianBinReader reader);
         public abstract void Write(EndianBinWriter writer, int baseOffset, int baseDataOffset);

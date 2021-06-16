@@ -32,6 +32,8 @@
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.editToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.addEditFromCSVFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.addToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -43,6 +45,7 @@
             this.tabControlLocalFiles = new System.Windows.Forms.TabControl();
             this.listViewEntries = new System.Windows.Forms.ListView();
             this.listViewPages = new System.Windows.Forms.ListView();
+            this.csvOpenFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.menuStrip.SuspendLayout();
             this.contextMenuStrip.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -51,7 +54,8 @@
             // menuStrip
             // 
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem});
+            this.fileToolStripMenuItem,
+            this.editToolStripMenuItem1});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(1228, 24);
@@ -108,6 +112,21 @@
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(159, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            // 
+            // editToolStripMenuItem1
+            // 
+            this.editToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.addEditFromCSVFileToolStripMenuItem});
+            this.editToolStripMenuItem1.Name = "editToolStripMenuItem1";
+            this.editToolStripMenuItem1.Size = new System.Drawing.Size(39, 20);
+            this.editToolStripMenuItem1.Text = "Edit";
+            // 
+            // addEditFromCSVFileToolStripMenuItem
+            // 
+            this.addEditFromCSVFileToolStripMenuItem.Name = "addEditFromCSVFileToolStripMenuItem";
+            this.addEditFromCSVFileToolStripMenuItem.Size = new System.Drawing.Size(353, 22);
+            this.addEditFromCSVFileToolStripMenuItem.Text = "Add/Edit Current Category from CSV File (Key, Value)";
+            this.addEditFromCSVFileToolStripMenuItem.Click += new System.EventHandler(this.addEditFromCSVFileToolStripMenuItem_Click);
             // 
             // contextMenuStrip
             // 
@@ -191,18 +210,22 @@
             this.listViewEntries.SelectedIndexChanged += new System.EventHandler(this.listViewEntries_SelectedIndexChanged);
             this.listViewEntries.DoubleClick += new System.EventHandler(this.listViewEntries_DoubleClick);
             // 
-            // listViewCategories
+            // listViewPages
             // 
             this.listViewPages.Dock = System.Windows.Forms.DockStyle.Left;
             this.listViewPages.HideSelection = false;
             this.listViewPages.Location = new System.Drawing.Point(0, 46);
             this.listViewPages.MultiSelect = false;
-            this.listViewPages.Name = "listViewCategories";
+            this.listViewPages.Name = "listViewPages";
             this.listViewPages.Size = new System.Drawing.Size(293, 382);
             this.listViewPages.TabIndex = 1;
             this.listViewPages.UseCompatibleStateImageBehavior = false;
             this.listViewPages.View = System.Windows.Forms.View.Details;
             this.listViewPages.SelectedIndexChanged += new System.EventHandler(this.listViewCategories_SelectedIndexChanged);
+            // 
+            // csvOpenFileDialog
+            // 
+            this.csvOpenFileDialog.Filter = "CSV files|*.csv";
             // 
             // Main
             // 
@@ -249,6 +272,9 @@
         private System.Windows.Forms.ToolStripMenuItem openFolderToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem addEditFromCSVFileToolStripMenuItem;
+        private System.Windows.Forms.OpenFileDialog csvOpenFileDialog;
     }
 }
 

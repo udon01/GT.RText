@@ -35,6 +35,7 @@ namespace GT.RText
         private ListViewColumnSorter _columnSorter;
 
         public RTextParser CurrentRText => _rTexts[tabControlLocalFiles.SelectedIndex];
+        public RTextPageBase CurrentPage { get; set; }
 
         public Main()
         {
@@ -231,6 +232,7 @@ namespace GT.RText
             {
                 var lViewItem = listViewPages.SelectedItems[0];
                 var page = (RTextPageBase)lViewItem.Tag;
+                CurrentPage = page;
 
                 DisplayEntries(page);
 
@@ -305,6 +307,8 @@ namespace GT.RText
                 var page = (RTextPageBase)pageLViewItem.Tag;
 
                 var rowEditor = new RowEditor(CurrentRText.RText is RT03, _isUiFolderProject);
+                rowEditor.Id = page.GetLastId() + 1;
+
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
                     if (page.PairUnits.ContainsKey(rowEditor.Label))
@@ -389,6 +393,87 @@ namespace GT.RText
 
             // Perform the sort with these new sort options.
             this.listViewEntries.Sort();
+        }
+
+        private void tabControlLocalFiles_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!_isUiFolderProject || tabControlLocalFiles.TabCount <= 0)
+                return;
+
+            ClearListViews();
+            DisplayPages();
+        }
+
+        private void addEditFromCSVFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!_rTexts.Any() || CurrentRText is null || CurrentPage is null) return;
+
+            if (csvOpenFileDialog.ShowDialog(this) != DialogResult.OK) return;
+
+            Dictionary<string, string> kv = new Dictionary<string, string>();
+            try
+            {
+                using (var file = File.OpenText(csvOpenFileDialog.FileName))
+                {
+                    while (!file.EndOfStream)
+                    {
+                        string line = file.ReadLine();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+
+                        string[] spl = line.Split(',');
+                        if (spl.Length != 2)
+                            continue;
+
+                        string key = spl[0];
+                        string value = spl[1];
+
+                        if (!kv.TryGetValue(key, out _))
+                            kv.Add(key, value);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                toolStripStatusLabel.Text = $"Unable to read CSV file: {ex.Message}";
+                return;
+            }
+
+            if (!kv.Any())
+            {
+                toolStripStatusLabel.Text = "Error: No valid key/value pairs found in CSV file.";
+                return;
+            }
+
+            if (_isUiFolderProject)
+            {
+                var res = MessageBox.Show($"Add to all openned locales?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Information);
+                if (res == DialogResult.Yes)
+                {
+
+                    foreach (var rtext in _rTexts)
+                    {
+                        if (rtext.RText.GetPages().TryGetValue(CurrentPage.Name, out var localePage))
+                            localePage.AddPairs(kv);
+                    }
+                    toolStripStatusLabel.Text = $"Added/Edited {kv.Count} entries for {_rTexts.Count} locales.";
+                }
+                else if (res == DialogResult.No)
+                {
+                    CurrentPage.AddPairs(kv);
+                    toolStripStatusLabel.Text = $"Added/Edited {kv.Count} entries.";
+                }
+                else
+                    return;
+            }
+            else
+            {
+                CurrentPage.AddPairs(kv);
+                toolStripStatusLabel.Text = $"Added/Edited {kv.Count} entries.";
+            }
+
+            
+            DisplayEntries(CurrentPage);
         }
         #endregion
 
@@ -522,15 +607,6 @@ namespace GT.RText
 
             // Perform the sort with these new sort options.
             this.listViewEntries.Sort();
-        }
-
-        private void tabControlLocalFiles_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (!_isUiFolderProject || tabControlLocalFiles.TabCount <= 0)
-                return;
-
-            ClearListViews();
-            DisplayPages();
         }
     }
 }
