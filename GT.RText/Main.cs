@@ -276,14 +276,24 @@ namespace GT.RText
                         foreach (var rt in _rTexts)
                         {
                             var rtPage = rt.RText.GetPages()[page.Name];
-                            rtPage.EditRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                            rtPage.DeleteRow(rowData.Label);
+                            rtPage.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
                         }
 
                         toolStripStatusLabel.Text = $"{rowEditor.Label} - edited to {_rTexts.Count} locales";
                     }
                     else
                     {
-                        page.EditRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+                        if (rowEditor.Label != rowEditor.Label && page.PairExists(rowEditor.Label))
+                        {
+                            MessageBox.Show("This label already exists in this category.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        // Remove, Add - Incase label was changed else we can't track it in our page
+                        page.DeleteRow(rowData.Label);
+                        page.AddRow(rowEditor.Id, rowEditor.Label, rowEditor.Data);
+
                         toolStripStatusLabel.Text = $"{rowEditor.Label} - edited";
                     }
 
@@ -311,7 +321,7 @@ namespace GT.RText
 
                 if (rowEditor.ShowDialog() == DialogResult.OK)
                 {
-                    if (page.PairUnits.ContainsKey(rowEditor.Label))
+                    if (page.PairExists(rowEditor.Label))
                     {
                         MessageBox.Show("This label already exists in this category.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;

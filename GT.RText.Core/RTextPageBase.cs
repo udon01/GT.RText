@@ -15,7 +15,7 @@ namespace GT.RText.Core
 
         public void EditRow(int id, string label, string data)
         {
-            if (!PairUnits.ContainsKey(label))
+            if (!PairExists(label))
                 return;
 
             PairUnits[label] = new RTextPairUnit(id, label, data);
@@ -33,6 +33,9 @@ namespace GT.RText.Core
 
         public int GetLastId()
             => PairUnits.Max(p => p.Value.ID);
+
+        public bool PairExists(string label)
+            => PairUnits.ContainsKey(label);
 
         public void AddPairs(Dictionary<string, string> pairs)
         {
