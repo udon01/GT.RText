@@ -514,9 +514,9 @@ namespace GT.RText
 
         private RTextParser ReadRTextFile(string filePath)
         {
+            var rText = new RTextParser(new ConsoleWriter());
             try
             {
-                var rText = new RTextParser(new ConsoleWriter());
                 byte[] data = File.ReadAllBytes(filePath);
                 rText.Read(data);
                 _rTexts.Add(rText);

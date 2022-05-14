@@ -63,10 +63,19 @@ namespace GT.RText.Core
                         RText = new RT04(_logWriter);
                         break;
                     case Constants.RT05_MAGIC:
-                        RText = new RT05( _logWriter);
-                        break;
+                         RText = new RT05(_logWriter);
+                         break;
                     case Constants._50TR_MAGIC:
-                        RText = new _50TR(_logWriter);
+                        try
+                        {
+                            RText = new _50TR(_logWriter);
+                            RText.Read(data);
+                            return;
+                        }
+                        catch { }
+
+                        // Failed, try GT7
+                        RText = new _50TR(_logWriter, gt7: true);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException("Unknown header magic.");

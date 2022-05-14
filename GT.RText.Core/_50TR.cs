@@ -19,18 +19,23 @@ namespace GT.RText.Core
 
         private readonly ILogWriter _logWriter;
 
-        public _50TR(string filePath, ILogWriter logWriter = null)
+        // For GT7 RT05, which uses int64 pointers
+        public bool _gt7;
+
+        public _50TR(string filePath, ILogWriter logWriter = null, bool gt7 = false)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException();
 
 
             _logWriter = logWriter;
+            _gt7 = gt7;
         }
 
-        public _50TR(ILogWriter logWriter = null)
+        public _50TR(ILogWriter logWriter = null, bool gt7 = false)
         {
             _logWriter = logWriter;
+            _gt7 = gt7;
         }
 
         public void GetCategoryByIndex()
@@ -60,8 +65,8 @@ namespace GT.RText.Core
 
                 for (int i = 0; i < entryCount; i++)
                 {
-                    ms.Position = HeaderSize + (i * 0x10);
-                    var page = new RT05Page(_logWriter);
+                    ms.Position = HeaderSize + (i * (_gt7 ? 0x18 : 0x10));
+                    var page = new RT05Page(_logWriter, gt7: _gt7);
                     page.Read(reader);
                     _pages.Add(page.Name, page);
                 }

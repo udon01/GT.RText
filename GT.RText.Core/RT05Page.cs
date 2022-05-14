@@ -13,33 +13,38 @@ namespace GT.RText.Core
     public class RT05Page : RTextPageBase
     {
         private readonly ILogWriter _logWriter;
-        public const int EntrySize = 0x10;
 
-        public RT05Page(ILogWriter logWriter = null)
+        public const int EntrySize = 0x10;
+        public const int EntrySizeGT7 = 0x18;
+
+        private bool _gt7;
+
+        public RT05Page(ILogWriter logWriter = null, bool gt7 = false)
         {
             _logWriter = logWriter;
+            _gt7 = gt7;
         }
 
         public override void Read(EndianBinReader reader)
         {
-            var pageNameOffset = reader.ReadUInt32();
+            var pageNameOffset = _gt7 ? reader.ReadInt64() : reader.ReadUInt32();
             var pairUnitCount = reader.ReadUInt32();
             reader.ReadUInt32(); // Unk
-            var pairUnitOffset = reader.ReadUInt32();
+            var pairUnitOffset = _gt7 ? reader.ReadInt64() : reader.ReadUInt32();
 
             reader.BaseStream.Position = (int)pageNameOffset;
             Name = reader.ReadNullTerminatedString();
 
             for (int i = 0; i < pairUnitCount; i++)
             {
-                reader.BaseStream.Position = pairUnitOffset + (i * EntrySize);
+                reader.BaseStream.Position = pairUnitOffset + (i * (_gt7 ? EntrySizeGT7 : EntrySize));
                 int id = reader.ReadInt32();
 
                 ushort labelLen = reader.ReadUInt16();
                 ushort valueLen = reader.ReadUInt16();
 
-                uint labelOffset = reader.ReadUInt32();
-                uint valueOffset = reader.ReadUInt32();
+                long labelOffset = _gt7 ? reader.ReadInt64() : reader.ReadUInt32();
+                long valueOffset = _gt7 ? reader.ReadInt64() : reader.ReadUInt32();
 
                 reader.BaseStream.Position = labelOffset;
                 string label = ReadString(reader, labelLen);
