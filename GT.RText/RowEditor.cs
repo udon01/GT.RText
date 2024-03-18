@@ -87,5 +87,52 @@ namespace GT.RText
         {
             ApplyToAllLocales = applyAllLocalesCheckBox.Checked;
         }
+
+        //コピーする
+        private void copy_Click(object sender, System.EventArgs e)
+        {
+            if (richTextBox_data.SelectionLength > 0)
+            {
+                //選択されている文字列があるときはコピーする
+                //（SelectionLengthで調べなくても問題はない）
+                richTextBox_data.Copy();
+            }
+        }
+
+        //切り取る
+        private void cut_Click(object sender, System.EventArgs e)
+        {
+            if (richTextBox_data.SelectionLength > 0)
+            {
+                //選択されている文字列があるときは切り取る
+                //（SelectionLengthで調べなくても問題はない）
+                richTextBox_data.Cut();
+            }
+        }
+
+        //貼り付ける
+        private void paste_Click(object sender, System.EventArgs e)
+        {
+            IDataObject data = Clipboard.GetDataObject();
+            if (data != null && data.GetDataPresent(DataFormats.Text) == true)
+            {
+                //クリップボードにテキストデータがあるときは貼り付ける
+                //（テキストデータの有無を調べなくても問題はない）
+                richTextBox_data.Paste();
+            }
+        }
+
+        //元に戻す
+        private void undo_Click(object sender, System.EventArgs e)
+        {
+            //アンドゥができるか調べる
+            if (richTextBox_data.CanUndo)
+            {
+                //アンドゥする
+                richTextBox_data.Undo();
+                //アンドゥバッファを削除する
+                richTextBox_data.ClearUndo();
+            }
+        }
     }
 }
